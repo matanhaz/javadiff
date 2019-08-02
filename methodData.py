@@ -4,8 +4,8 @@ class MethodData(object):
         self.start_line = int(start_line)
         self.end_line = int(end_line)
         self.implementation = contents[self.start_line - 1: self.end_line]
-        self.changed = self._is_changed(changed_indices)
         self.method_used_lines = method_used_lines
+        self.changed = self._is_changed(changed_indices)
         self.parameters = parameters
         self.file_name = file_name
         self.id = self.file_name + "@" + self.method_name + "(" + ",".join(self.parameters) + ")"

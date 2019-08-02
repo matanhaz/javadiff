@@ -45,8 +45,8 @@ class SourceFile(object):
         methods_dict = dict()
         for class_declaration in map(operator.itemgetter(1), parsed_data.filter(javalang.tree.ClassDeclaration)):
             class_name = class_declaration.name
-            methods = map(operator.itemgetter(1), parsed_data.filter(javalang.tree.MethodDeclaration))
-            constructors = map(operator.itemgetter(1), parsed_data.filter(javalang.tree.ConstructorDeclaration))
+            methods = map(operator.itemgetter(1), class_declaration.filter(javalang.tree.MethodDeclaration))
+            constructors = map(operator.itemgetter(1), class_declaration.filter(javalang.tree.ConstructorDeclaration))
             for method in methods + constructors:
                 if not method.body:
                     # skip abstract methods

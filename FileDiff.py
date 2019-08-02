@@ -12,10 +12,10 @@ class FileDiff(object):
     BEFORE_PREFIXES = [REMOVED, UNCHANGED]
     AFTER_PREFIXES = [ADDED, UNCHANGED]
 
-    def __init__(self, diff, commit_sha, repo_files):
+    def __init__(self, diff, commit_sha):
         self.file_name = diff.b_path
         self.commit_sha = commit_sha
-        self.is_ok = self.file_name.endswith(".java") and self.file_name in repo_files
+        self.is_ok = self.file_name.endswith(".java")
         if not self.is_ok:
             return
         before_contents = ['']

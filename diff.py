@@ -11,12 +11,14 @@ from CommitsDiff import CommitsDiff
 
 def get_changed_methods(git_path, child, parent=None):
     repo = git.Repo(git_path)
+    if isinstance(child, str):
+        child = repo.commit(child)
     if not parent:
         parent = child.parents[0]
     repo_files = filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
                         repo.git.ls_files().split())
     methods = []
-    for file_diff in CommitsDiff(child, parent, repo_files).diffs:
+    for file_diff in CommitsDiff(child, parent).diffs:
         gc.collect()
         if file_diff.is_java_file():
             methods.extend(map(lambda m: m.id, file_diff.get_changed_methods()))
