@@ -7,6 +7,7 @@ import git
 import jira
 
 from CommitsDiff import CommitsDiff
+from FileDiff import FileDiff
 
 
 def get_changed_methods(git_path, child, parent=None):
@@ -17,8 +18,17 @@ def get_changed_methods(git_path, child, parent=None):
         parent = child.parents[0]
     repo_files = filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
                         repo.git.ls_files().split())
+    return get_methds_from_file_diffs(CommitsDiff(child, parent).diffs)
+
+
+def get_modified_functions(git_path):
+    repo = git.Repo(git_path)
+    return get_methds_from_file_diffs(map(lambda d: FileDiff(d, repo.head.commit.hexsha), repo.head.commit.tree.diff(None)))
+
+
+def get_methds_from_file_diffs(file_diffs):
     methods = []
-    for file_diff in CommitsDiff(child, parent).diffs:
+    for file_diff in file_diffs:
         gc.collect()
         if file_diff.is_java_file():
             methods.extend(map(lambda m: m.id, file_diff.get_changed_methods()))
