@@ -1,12 +1,12 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
-    name='java_diff',
+    name='javadiff',
     version='',
-    packages=[''],
+    packages=find_packages(),
     url='',
     license='',
     author='Amir Elmishali',
-    author_email='',
+    author_email='amir9979@gmail.com',
     description=''
 )
