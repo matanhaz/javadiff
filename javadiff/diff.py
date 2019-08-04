@@ -18,15 +18,15 @@ def get_changed_methods(git_path, child, parent=None):
         parent = child.parents[0]
     repo_files = filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
                         repo.git.ls_files().split())
-    return get_methds_from_file_diffs(CommitsDiff(child, parent).diffs)
+    return get_methods_from_file_diffs(CommitsDiff(child, parent).diffs)
 
 
 def get_modified_functions(git_path):
     repo = git.Repo(git_path)
-    return get_methds_from_file_diffs(map(lambda d: FileDiff(d, repo.head.commit.hexsha), repo.head.commit.tree.diff(None)))
+    return get_methods_from_file_diffs(map(lambda d: FileDiff(d, repo.head.commit.hexsha), repo.head.commit.tree.diff(None, None, True, ignore_blank_lines=True, ignore_space_at_eol=True)))
 
 
-def get_methds_from_file_diffs(file_diffs):
+def get_methods_from_file_diffs(file_diffs):
     methods = []
     for file_diff in file_diffs:
         gc.collect()
@@ -112,6 +112,9 @@ def get_bugs_data(gitPath, jira_project_name, jira_url, json_out, number_of_bugs
 
 
 if __name__ == "__main__":
+    funtions = get_modified_functions(r"C:\amirelm\component_importnace\data\d4j_lang6\clones\11")
+    print funtions
+    exit()
     args = sys.argv
     print get_changed_methods(r"C:\Temp\commons-lang",
                               git.Repo(r"C:\Temp\commons-lang").commit("a40b2a907a69e51675d7d0502b2608833c4da343"))

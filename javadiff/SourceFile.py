@@ -22,8 +22,7 @@ class SourceFile(object):
                     self.package_name = packages[0].name
                 self.methods = self.get_methods_by_javalang(tokens, parsed_data)
         except:
-            pass
-
+            raise
     def get_methods_by_javalang(self, tokens, parsed_data):
         def get_method_end_position(method, seperators):
             method_seperators = seperators[map(id, sorted(seperators + [method],
