@@ -23,6 +23,7 @@ class SourceFile(object):
                 self.methods = self.get_methods_by_javalang(tokens, parsed_data)
         except:
             raise
+
     def get_methods_by_javalang(self, tokens, parsed_data):
         def get_method_end_position(method, seperators):
             method_seperators = seperators[map(id, sorted(seperators + [method],
@@ -38,7 +39,7 @@ class SourceFile(object):
                 if counter == 0:
                     return seperator.position
 
-        used_lines = set(map(lambda t: t.position.line, tokens))
+        used_lines = set(map(lambda t: t.position.line-1, tokens))
         seperators = filter(lambda token: isinstance(token, javalang.tokenizer.Separator) and token.value in "{}",
                             tokens)
         methods_dict = dict()
@@ -74,6 +75,7 @@ class SourceFile(object):
     def __repr__(self):
         return self.file_name
 
+
 if __name__ == "__main__":
-    sf = SourceFile(open(r"C:\temp\tika\tika-parsers\src\main\java\org\apache\tika\parser\strings\StringsParser.java").readlines(), "StringsParser.java")
+    sf = SourceFile(open(r"C:\amirelm\component_importnace\data\maven\clones\1205_1bdeeccc\maven-artifact\src\main\java\org\apache\maven\artifact\resolver\DefaultArtifactCollector.java").readlines(), "DefaultArtifactCollector.java")
     pass
