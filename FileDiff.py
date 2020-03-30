@@ -57,7 +57,7 @@ class FileDiff(object):
 
         diff_after_lines = get_lines_by_prefixes(diff, FileDiff.AFTER_PREFIXES)
         assert map(lambda x: x[2:], diff_after_lines) == after_contents
-        after_indices = get_indices_by_prefix(diff_before_lines, FileDiff.ADDED)
+        after_indices = get_indices_by_prefix(diff_after_lines, FileDiff.ADDED)
 
         return before_indices, after_indices
 
