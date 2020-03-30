@@ -1,5 +1,6 @@
 import difflib
 import gc
+import os
 
 from SourceFile import SourceFile
 
@@ -12,7 +13,7 @@ class FileDiff(object):
     BEFORE_PREFIXES = [REMOVED, UNCHANGED]
     AFTER_PREFIXES = [ADDED, UNCHANGED]
 
-    def __init__(self, diff, commit_sha):
+    def __init__(self, diff, commit_sha, first_commit=None, second_commit=None, git_dir=None):
         self.file_name = diff.b_path
         self.commit_sha = commit_sha
         self.is_ok = self.file_name.endswith(".java")
@@ -27,12 +28,26 @@ class FileDiff(object):
                 before_contents = diff.a_blob.data_stream.stream.readlines()
             except:
                 gc.collect()
+                if first_commit:
+                    try:
+                        before_contents = first_commit.repo.git.show("{0}:{1}".format(first_commit.hexsha, diff.a_path)).split('\n')
+                    except:
+                        gc.collect()
         if diff.deleted_file:
             assert diff.b_blob is None
         else:
             try:
                 after_contents = diff.b_blob.data_stream.stream.readlines()
             except:
+                if second_commit:
+                    try:
+                        after_contents = second_commit.repo.git.show("{0}:{1}".format(second_commit.hexsha, diff.b_path)).split('\n')
+                    except:
+                        gc.collect()
+                elif git_dir:
+                    path = os.path.join(git_dir, diff.b_path)
+                    with open(path) as f:
+                        after_contents = f.readlines()
                 gc.collect()
         before_indices, after_indices = self.get_changed_indices(before_contents, after_contents)
         self.before_file = SourceFile(before_contents, diff.a_path, before_indices)

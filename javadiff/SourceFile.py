@@ -22,7 +22,7 @@ class SourceFile(object):
                     self.package_name = packages[0].name
                 self.methods = self.get_methods_by_javalang(tokens, parsed_data)
         except:
-            pass
+            raise
 
     def get_methods_by_javalang(self, tokens, parsed_data):
         def get_method_end_position(method, seperators):
@@ -39,7 +39,7 @@ class SourceFile(object):
                 if counter == 0:
                     return seperator.position
 
-        used_lines = set(map(lambda t: t.position.line, tokens))
+        used_lines = set(map(lambda t: t.position.line-1, tokens))
         seperators = filter(lambda token: isinstance(token, javalang.tokenizer.Separator) and token.value in "{}",
                             tokens)
         methods_dict = dict()
@@ -54,7 +54,7 @@ class SourceFile(object):
                 method_start_position = method.position
                 method_end_position = get_method_end_position(method, seperators)
                 method_used_lines = filter(lambda line: method_start_position.line <= line <= method_end_position.line, used_lines)
-                parameters = map(lambda parameter: parameter.type.name, method.parameters)
+                parameters = map(lambda parameter: parameter.type.name + ('[]' if parameter.varargs else ''), method.parameters)
                 method_data = MethodData(".".join([self.package_name, class_name, method.name]),
                                          method_start_position.line, method_end_position.line,
                                          self.contents, self.changed_indices, method_used_lines, parameters, self.file_name)
@@ -75,6 +75,7 @@ class SourceFile(object):
     def __repr__(self):
         return self.file_name
 
+
 if __name__ == "__main__":
-    sf = SourceFile(open(r"C:\temp\tika\tika-parsers\src\main\java\org\apache\tika\parser\strings\StringsParser.java").readlines(), "StringsParser.java")
+    sf = SourceFile(open(r"C:\amirelm\component_importnace\data\maven\clones\1205_1bdeeccc\maven-artifact\src\main\java\org\apache\maven\artifact\resolver\DefaultArtifactCollector.java").readlines(), "DefaultArtifactCollector.java")
     pass
