@@ -13,7 +13,7 @@ class SourceFile(object):
         self.methods = dict()
         try:
             if file_name.endswith(".java"):
-                tokens = list(javalang.tokenizer.tokenize("".join(self.contents)))
+                tokens = list(javalang.tokenizer.tokenize("".join(list(map(lambda x: x.decode("utf-8"), self.contents)))))
                 parser = javalang.parser.Parser(tokens)
                 parsed_data = parser.parse()
                 packages = map(operator.itemgetter(1), parsed_data.filter(javalang.tree.PackageDeclaration))
