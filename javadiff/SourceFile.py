@@ -13,10 +13,10 @@ class SourceFile(object):
         self.methods = dict()
         try:
             if file_name.endswith(".java"):
-                tokens = list(javalang.tokenizer.tokenize("".join(list(map(lambda x: x.decode("utf-8"), self.contents)))))
+                tokens = list(javalang.tokenizer.tokenize("".join(self.contents)))
                 parser = javalang.parser.Parser(tokens)
                 parsed_data = parser.parse()
-                packages = map(operator.itemgetter(1), parsed_data.filter(javalang.tree.PackageDeclaration))
+                packages = list(map(operator.itemgetter(1), parsed_data.filter(javalang.tree.PackageDeclaration)))
                 self.package_name = ''
                 if packages:
                     self.package_name = packages[0].name
@@ -26,8 +26,8 @@ class SourceFile(object):
 
     def get_methods_by_javalang(self, tokens, parsed_data):
         def get_method_end_position(method, seperators):
-            method_seperators = seperators[map(id, sorted(seperators + [method],
-                                                          key=lambda x: (x.position.line, x.position.column))).index(
+            method_seperators = seperators[list(map(id, sorted(seperators + [method],
+                                                          key=lambda x: (x.position.line, x.position.column)))).index(
                 id(method)):]
             assert method_seperators[0].value == "{"
             counter = 1
@@ -40,21 +40,21 @@ class SourceFile(object):
                     return seperator.position
 
         used_lines = set(map(lambda t: t.position.line-1, tokens))
-        seperators = filter(lambda token: isinstance(token, javalang.tokenizer.Separator) and token.value in "{}",
-                            tokens)
+        seperators = list(filter(lambda token: isinstance(token, javalang.tokenizer.Separator) and token.value in "{}",
+                            tokens))
         methods_dict = dict()
         for class_declaration in map(operator.itemgetter(1), parsed_data.filter(javalang.tree.ClassDeclaration)):
             class_name = class_declaration.name
-            methods = map(operator.itemgetter(1), class_declaration.filter(javalang.tree.MethodDeclaration))
-            constructors = map(operator.itemgetter(1), class_declaration.filter(javalang.tree.ConstructorDeclaration))
+            methods = list(map(operator.itemgetter(1), class_declaration.filter(javalang.tree.MethodDeclaration)))
+            constructors = list(map(operator.itemgetter(1), class_declaration.filter(javalang.tree.ConstructorDeclaration)))
             for method in methods + constructors:
                 if not method.body:
                     # skip abstract methods
                     continue
                 method_start_position = method.position
                 method_end_position = get_method_end_position(method, seperators)
-                method_used_lines = filter(lambda line: method_start_position.line <= line <= method_end_position.line, used_lines)
-                parameters = map(lambda parameter: parameter.type.name + ('[]' if parameter.varargs else ''), method.parameters)
+                method_used_lines = list(filter(lambda line: method_start_position.line <= line <= method_end_position.line, used_lines))
+                parameters = list(map(lambda parameter: parameter.type.name + ('[]' if parameter.varargs else ''), method.parameters))
                 method_data = MethodData(".".join([self.package_name, class_name, method.name]),
                                          method_start_position.line, method_end_position.line,
                                          self.contents, self.changed_indices, method_used_lines, parameters, self.file_name)

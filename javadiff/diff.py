@@ -1,4 +1,7 @@
-import StringIO
+try:
+    import StringIO
+except:
+    from io import StringIO
 import gc
 import json
 import sys
@@ -9,6 +12,7 @@ import jira
 from CommitsDiff import CommitsDiff
 from FileDiff import FileDiff
 
+from functools import reduce
 
 def get_changed_methods(git_path, child, parent=None):
     repo = git.Repo(git_path)
@@ -16,8 +20,8 @@ def get_changed_methods(git_path, child, parent=None):
         child = repo.commit(child)
     if not parent:
         parent = child.parents[0]
-    repo_files = filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
-                        repo.git.ls_files().split())
+    repo_files = list(filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
+                        repo.git.ls_files().split()))
     return get_methods_from_file_diffs(CommitsDiff(child, parent).diffs)
 
 
@@ -47,12 +51,12 @@ def get_methods_descriptions(git_path, json_out_file):
     commits_to_check = map(lambda x: x[:commit_size], commits_to_check)
     commits = list(repo.iter_commits())
     methods_descriptions = {}
-    print "# commits to check: {0}".format(len(commits_to_check))
+    print("# commits to check: {0}".format(len(commits_to_check)))
     for i in range(len(commits) - 1):
-        print "commit {0} of {1}".format(i, len(commits))
+        print("commit {0} of {1}".format(i, len(commits)))
         if not commits[i + 1].hexsha[:commit_size] in commits_to_check:
             continue
-        print "inspect commit {0} of {1}".format(i, len(commits))
+        print("inspect commit {0} of {1}".format(i, len(commits)))
         methods = get_changed_methods(git_path, commits[i + 1])
         if methods:
             map(lambda method: methods_descriptions.setdefault(method, StringIO.StringIO()).write(
@@ -114,14 +118,14 @@ def get_bugs_data(gitPath, jira_project_name, jira_url, json_out, number_of_bugs
 
 if __name__ == "__main__":
     funtions = get_modified_functions(r"C:\amirelm\component_importnace\data\maven\clones\5209_87884c7b")
-    print funtions
+    print(funtions)
     exit()
     args = sys.argv
     c = get_changed_methods(r"C:\Temp\commons-lang",
                               git.Repo(r"C:\Temp\commons-lang").commit("38140a5d8dffec88f7c88da73ce3989770e086e6"))
     for c1 in c:
-        print c1
-        print "\n\t".join(map(repr, c1.get_changed_lines()))
+        print(c1)
+        print("\n\t".join(map(repr, c1.get_changed_lines())))
     assert len(args) == 6, "USAGE: diff.py git_path jira_project_name jira_url json_method_file json_bugs_file"
     get_bugs_data(args[1], args[2], args[3], args[5])
     get_methods_descriptions(args[1], args[4])
