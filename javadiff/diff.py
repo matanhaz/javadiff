@@ -1,4 +1,7 @@
-import StringIO
+try:
+    import StringIO
+except:
+    from io import StringIO
 import gc
 import json
 import sys
@@ -9,6 +12,7 @@ import jira
 from CommitsDiff import CommitsDiff
 from FileDiff import FileDiff
 
+from functools import reduce
 
 def get_changed_methods(git_path, child, parent=None):
     repo = git.Repo(git_path)
@@ -16,8 +20,8 @@ def get_changed_methods(git_path, child, parent=None):
         child = repo.commit(child)
     if not parent:
         parent = child.parents[0]
-    repo_files = filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
-                        repo.git.ls_files().split())
+    repo_files = list(filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
+                        repo.git.ls_files().split()))
     return get_methods_from_file_diffs(CommitsDiff(child, parent).diffs)
 
 
@@ -47,9 +51,12 @@ def get_methods_descriptions(git_path, json_out_file):
     commits_to_check = map(lambda x: x[:commit_size], commits_to_check)
     commits = list(repo.iter_commits())
     methods_descriptions = {}
+    print("# commits to check: {0}".format(len(commits_to_check)))
     for i in range(len(commits) - 1):
+        print("commit {0} of {1}".format(i, len(commits)))
         if not commits[i + 1].hexsha[:commit_size] in commits_to_check:
             continue
+        print("inspect commit {0} of {1}".format(i, len(commits)))
         methods = get_changed_methods(git_path, commits[i + 1])
         if methods:
             map(lambda method: methods_descriptions.setdefault(method, StringIO.StringIO()).write(
@@ -118,17 +125,7 @@ def commits_and_issues(repo, issues):
             Commit.init_commit_by_git_commit(git_commit, get_bug_num_from_comit_text(commit_text, issues_ids)))
     return commits
 
-    commits = []
-    issues_per_commits = dict()
-    repo = git.Repo(gitPath)
-    for git_commit in repo.iter_commits():
-        commit_text = clean_commit_message(git_commit.message)
-        issue_id = get_bug_num_from_comit_text(commit_text, issues.keys())
-        if issue_id != "0":
-            methods = get_changed_methods(gitPath, git_commit)
-            if methods:
-                issues_per_commits.setdefault(issue_id, (issues[issue_id], []))[1].extend(methods)
-    return issues_per_commits
+
 
 
 def get_bugs_data(gitPath, jira_project_name, jira_url, json_out, number_of_bugs=100):
@@ -139,11 +136,8 @@ def get_bugs_data(gitPath, jira_project_name, jira_url, json_out, number_of_bugs
 
 
 if __name__ == "__main__":
-    # get_methods_per_commit(r"Z:\ev_repos\LANG", r"c:\temp\lang_methods.json")
-    # exit()
-    get_methods_per_commit(r"Z:\ev_repos\WICKET", r"c:\temp\wicket_methods.json")
-    exit()
     funtions = get_modified_functions(r"C:\amirelm\component_importnace\data\maven\clones\5209_87884c7b")
+    print funtions
     exit()
     args = sys.argv
     c = get_changed_methods(r"C:\Temp\commons-lang",

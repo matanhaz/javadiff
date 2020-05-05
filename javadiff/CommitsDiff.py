@@ -1,11 +1,10 @@
-from itertools import imap
 
 from FileDiff import FileDiff
 
 
 class CommitsDiff(object):
     def __init__(self, commit_a, commit_b):
-        self.diffs = CommitsDiff.diffs(commit_a, commit_b)
+        self.diffs = list(CommitsDiff.diffs(commit_a, commit_b))
 
     @staticmethod
     def diffs(commit_a, commit_b):
