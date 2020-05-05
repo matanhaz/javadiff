@@ -3,7 +3,7 @@ import operator
 import javalang
 
 from methodData import MethodData
-
+import os
 
 class SourceFile(object):
     def __init__(self, contents, file_name, indices=()):
@@ -17,9 +17,11 @@ class SourceFile(object):
                 parser = javalang.parser.Parser(tokens)
                 parsed_data = parser.parse()
                 packages = list(map(operator.itemgetter(1), parsed_data.filter(javalang.tree.PackageDeclaration)))
+                classes = list(map(operator.itemgetter(1), parsed_data.filter(javalang.tree.ClassDeclaration)))
                 self.package_name = ''
                 if packages:
                     self.package_name = packages[0].name
+                    self.modified_names = map(lambda c: self.package_name + "." + c.name, classes)
                 self.methods = self.get_methods_by_javalang(tokens, parsed_data)
         except:
             raise
