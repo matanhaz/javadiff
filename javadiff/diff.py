@@ -66,6 +66,21 @@ def get_methods_descriptions(git_path, json_out_file):
         json.dump(data, f)
 
 
+def get_methods_per_commit(git_path, json_out_file):
+    repo = git.Repo(git_path)
+    commits = list(repo.iter_commits())
+    methods_per_commit = {}
+    for i in range(len(commits) - 1):
+        try:
+            methods = get_changed_methods(git_path, commits[i + 1])
+        except:
+            continue
+        if methods:
+            methods_per_commit[commits[i].hexsha] = map(repr, methods)
+    with open(json_out_file, "wb") as f:
+        json.dump(methods_per_commit, f)
+
+
 def get_jira_issues(project_name, url, bunch=100):
     jira_conn = jira.JIRA(url)
     all_issues = []
@@ -86,27 +101,31 @@ def clean_commit_message(commit_message):
     return commit_message
 
 
-def commits_and_issues(gitPath, issues):
+def commits_and_issues(repo, issues):
+    def replace(chars_to_replace, replacement, s):
+        temp_s = s
+        for c in chars_to_replace:
+            temp_s = temp_s.replace(c, replacement)
+        return temp_s
+
     def get_bug_num_from_comit_text(commit_text, issues_ids):
-        s = commit_text.lower().replace(":", "").replace("#", "").replace("-", " ").replace("_", " ").split()
-        for word in s:
-            if word.replace('[', '').replace(']', '').replace('(', '').replace(')', '').replace('{', '').replace('}',
-                                                                                                                 '').isdigit():
+        text = replace("[]?#,:(){}", "", commit_text.lower())
+        text = replace("-_", " ", text)
+        for word in text.split():
+            if word.isdigit():
                 if word in issues_ids:
                     return word
         return "0"
 
     commits = []
-    issues_per_commits = dict()
-    repo = git.Repo(gitPath)
+    issues_ids = map(lambda issue: issue.split("-")[1], issues)
     for git_commit in repo.iter_commits():
-        commit_text = clean_commit_message(git_commit.message)
-        issue_id = get_bug_num_from_comit_text(commit_text, issues.keys())
-        if issue_id != "0":
-            methods = get_changed_methods(gitPath, git_commit)
-            if methods:
-                issues_per_commits.setdefault(issue_id, (issues[issue_id], []))[1].extend(methods)
-    return issues_per_commits
+        commit_text = DataExtractor.clean_commit_message(git_commit.summary)
+        commits.append(
+            Commit.init_commit_by_git_commit(git_commit, get_bug_num_from_comit_text(commit_text, issues_ids)))
+    return commits
+
+
 
 
 def get_bugs_data(gitPath, jira_project_name, jira_url, json_out, number_of_bugs=100):
@@ -118,14 +137,14 @@ def get_bugs_data(gitPath, jira_project_name, jira_url, json_out, number_of_bugs
 
 if __name__ == "__main__":
     funtions = get_modified_functions(r"C:\amirelm\component_importnace\data\maven\clones\5209_87884c7b")
-    print(funtions)
+    print funtions
     exit()
     args = sys.argv
     c = get_changed_methods(r"C:\Temp\commons-lang",
                               git.Repo(r"C:\Temp\commons-lang").commit("38140a5d8dffec88f7c88da73ce3989770e086e6"))
     for c1 in c:
-        print(c1)
-        print("\n\t".join(map(repr, c1.get_changed_lines())))
+        print c1
+        print "\n\t".join(map(repr, c1.get_changed_lines()))
     assert len(args) == 6, "USAGE: diff.py git_path jira_project_name jira_url json_method_file json_bugs_file"
     get_bugs_data(args[1], args[2], args[3], args[5])
     get_methods_descriptions(args[1], args[4])
