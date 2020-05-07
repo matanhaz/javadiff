@@ -46,8 +46,9 @@ class MethodData(object):
         self.parameters = parameters
         self.file_name = file_name
         self.method_decl = method_decl
-        self.id = self.file_name + "@" + self.method_name + "(" + ",".join(self.parameters) + ")"
         self.source_lines = SourceLine.get_source_lines(start_line, end_line, contents, changed_indices, method_used_lines, method_decl.body)
+        self.method_name_parameters = self.method_name + "(" + ",".join(self.parameters) + ")"
+        self.id = self.file_name + "@" + self.method_name_parameters
         self.changed = self._is_changed()
 
     def _is_changed(self):
