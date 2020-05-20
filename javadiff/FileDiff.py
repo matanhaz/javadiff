@@ -79,8 +79,11 @@ class FileDiff(object):
         return before_indices, after_indices
 
     def get_changed_methods(self):
-        return list(filter(lambda method: method.changed,
-                      list(self.before_file.methods.values()) + list(self.after_file.methods.values())))
+        return self.after_file.get_changed_methods() + self.before_file.get_changed_methods()
+
+    def get_changed_exists_methods(self):
+        return list(filter(lambda m: m.id in self.before_file.methods, self.after_file.get_changed_methods())) + \
+               list(filter(lambda m: m.id in self.after_file.methods, self.before_file.get_changed_methods()))
 
     def __repr__(self):
         return self.file_name

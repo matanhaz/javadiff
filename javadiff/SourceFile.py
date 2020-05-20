@@ -64,7 +64,7 @@ class SourceFile(object):
         return methods_dict
 
     def get_changed_methods(self):
-        return filter(lambda method: method.changed, self.methods.values())
+        return list(filter(lambda method: method.changed, self.methods.values()))
 
     def replace_method(self, method_data):
         assert method_data.method_name in self.methods
@@ -76,8 +76,3 @@ class SourceFile(object):
 
     def __repr__(self):
         return self.file_name
-
-
-if __name__ == "__main__":
-    sf = SourceFile(open(r"C:\temp\DL\distributedlog-core\src\main\java\org\apache\distributedlog\AppendOnlyStreamWriter.java").readlines(), "DefaultArtifactCollector.java")
-    pass

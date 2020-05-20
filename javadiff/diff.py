@@ -23,21 +23,38 @@ def get_changed_methods(git_path, child, parent=None):
         parent = child.parents[0]
     repo_files = list(filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
                         repo.git.ls_files().split()))
-    return get_methods_from_file_diffs(CommitsDiff(child, parent).diffs)
+    return get_changed_methods_from_file_diffs(CommitsDiff(child, parent).diffs)
+
+
+def get_changed_exists_methods(git_path, child, parent=None):
+    repo = git.Repo(git_path)
+    if isinstance(child, str):
+        child = repo.commit(child)
+    if not parent:
+        parent = child.parents[0]
+    return get_changed_exists_methods_from_file_diffs(CommitsDiff(child, parent).diffs)
 
 
 def get_modified_functions(git_path):
     repo = git.Repo(git_path)
     diffs = repo.head.commit.tree.diff(None, None, True, ignore_blank_lines=True, ignore_space_at_eol=True)
-    return get_methods_from_file_diffs(map(lambda d: FileDiff(d, repo.head.commit.hexsha, git_dir=git_path), diffs))
+    return get_changed_methods_from_file_diffs(map(lambda d: FileDiff(d, repo.head.commit.hexsha, git_dir=git_path), diffs))
 
 
-def get_methods_from_file_diffs(file_diffs):
+def get_changed_methods_from_file_diffs(file_diffs):
     methods = []
     for file_diff in file_diffs:
         gc.collect()
         if file_diff.is_java_file():
             methods.extend(file_diff.get_changed_methods())
+    return methods
+
+def get_changed_exists_methods_from_file_diffs(file_diffs):
+    methods = []
+    for file_diff in file_diffs:
+        gc.collect()
+        if file_diff.is_java_file():
+            methods.extend(file_diff.get_changed_exists_methods())
     return methods
 
 
@@ -175,8 +192,6 @@ def commits_and_issues(git_path, issues):
     return commits
 
 
-
-
 def get_bugs_data(gitPath, jira_project_name, jira_url, json_out, number_of_bugs=100):
     issues = get_jira_issues(jira_project_name, jira_url)
     issues = dict(map(lambda issue: (issue, issues[issue][1]), filter(lambda issue: issues[issue][0] == 'bug', issues)))
@@ -188,12 +203,11 @@ if __name__ == "__main__":
     # get_bugs_data(r"z:\ev_repos\LANG", "LANG", r"http://issues.apache.org/jira", r"c:\temp\lang_issues.json")
     # get_bugs_data(r"z:\ev_repos\WICKET", "WICKET", r"http://issues.apache.org/jira", r"c:\temp\wicket_issues.json")
     # exit()
-    funtions = get_modified_functions(r"C:\temp\DL")
-    print funtions
+    c = get_changed_methods(r"Z:\ev_repos\COMPRESS",
+                              git.Repo(r"Z:\ev_repos\COMPRESS").commit("af2da2e151a8c76e217bc239616174cafbb702ec"))
+    c2 = get_changed_exists_methods(r"Z:\ev_repos\COMPRESS",
+                              git.Repo(r"Z:\ev_repos\COMPRESS").commit("af2da2e151a8c76e217bc239616174cafbb702ec"))
     exit()
-    args = sys.argv
-    c = get_changed_methods(r"C:\Temp\commons-lang",
-                              git.Repo(r"C:\Temp\commons-lang").commit("38140a5d8dffec88f7c88da73ce3989770e086e6"))
     for c1 in c:
         print c1
         print "\n\t".join(map(repr, c1.get_changed_lines()))
