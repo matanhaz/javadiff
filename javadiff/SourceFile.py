@@ -2,7 +2,7 @@ import operator
 
 import javalang
 
-from methodData import MethodData
+from .methodData import MethodData
 import os
 
 class SourceFile(object):
