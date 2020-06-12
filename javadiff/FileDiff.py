@@ -13,7 +13,7 @@ class FileDiff(object):
     BEFORE_PREFIXES = [REMOVED, UNCHANGED]
     AFTER_PREFIXES = [ADDED, UNCHANGED]
 
-    def __init__(self, diff, commit_sha, first_commit=None, second_commit=None, git_dir=None):
+    def __init__(self, diff, commit_sha, first_commit=None, second_commit=None, git_dir=None, analyze_source_lines=True):
         self.file_name = diff.b_path
         self.commit_sha = commit_sha
         self.is_ok = self.file_name.endswith(".java")
@@ -52,8 +52,9 @@ class FileDiff(object):
         before_contents = list(map(lambda x: x.decode("utf-8"), before_contents))
         after_contents = list(map(lambda x: x.decode("utf-8"), after_contents))
         before_indices, after_indices = self.get_changed_indices(before_contents, after_contents)
-        self.before_file = SourceFile(before_contents, diff.a_path, before_indices)
-        self.after_file = SourceFile(after_contents, diff.b_path, after_indices)
+        self.before_file = SourceFile(before_contents, diff.a_path, before_indices, analyze_source_lines=analyze_source_lines)
+        self.after_file = SourceFile(after_contents, diff.b_path, after_indices, analyze_source_lines=analyze_source_lines)
+        self.modified_names = self.after_file.modified_names
 
     def is_java_file(self):
         return self.is_ok

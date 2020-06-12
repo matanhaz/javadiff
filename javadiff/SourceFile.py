@@ -6,7 +6,7 @@ from methodData import MethodData
 import os
 
 class SourceFile(object):
-    def __init__(self, contents, file_name, indices=()):
+    def __init__(self, contents, file_name, indices=(), analyze_source_lines=True):
         self.contents = contents
         self.changed_indices = indices
         self.file_name = file_name
@@ -22,11 +22,11 @@ class SourceFile(object):
                 if packages:
                     self.package_name = packages[0].name
                     self.modified_names = map(lambda c: self.package_name + "." + c.name, classes)
-                self.methods = self.get_methods_by_javalang(tokens, parsed_data)
+                self.methods = self.get_methods_by_javalang(tokens, parsed_data, analyze_source_lines=analyze_source_lines)
         except:
             raise
 
-    def get_methods_by_javalang(self, tokens, parsed_data):
+    def get_methods_by_javalang(self, tokens, parsed_data, analyze_source_lines=True):
         def get_method_end_position(method, seperators):
             method_seperators = seperators[list(map(id, sorted(seperators + [method],
                                                           key=lambda x: (x.position.line, x.position.column)))).index(
@@ -59,7 +59,7 @@ class SourceFile(object):
                 parameters = list(map(lambda parameter: parameter.type.name + ('[]' if parameter.varargs else ''), method.parameters))
                 method_data = MethodData(".".join([self.package_name, class_name, method.name]),
                                          method_start_position.line, method_end_position.line,
-                                         self.contents, self.changed_indices, method_used_lines, parameters, self.file_name, method)
+                                         self.contents, self.changed_indices, method_used_lines, parameters, self.file_name, method, analyze_source_lines=analyze_source_lines)
                 methods_dict[method_data.id] = method_data
         return methods_dict
 
