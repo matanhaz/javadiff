@@ -2,7 +2,7 @@ import difflib
 import gc
 import os
 
-from SourceFile import SourceFile
+from .SourceFile import SourceFile
 
 
 class FileDiff(object):
@@ -81,6 +81,9 @@ class FileDiff(object):
 
     def get_changed_methods(self):
         return self.after_file.get_changed_methods() + self.before_file.get_changed_methods()
+
+    def get_methods(self):
+        return list(self.before_file.methods.values()) + list(self.after_file.methods.values())
 
     def get_changed_exists_methods(self):
         return list(filter(lambda m: m.id in self.before_file.methods, self.after_file.get_changed_methods())) + \

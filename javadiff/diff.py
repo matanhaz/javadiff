@@ -9,8 +9,8 @@ import sys
 import git
 import jira
 
-from CommitsDiff import CommitsDiff
-from FileDiff import FileDiff
+from .CommitsDiff import CommitsDiff
+from .FileDiff import FileDiff
 
 from functools import reduce
 
@@ -24,6 +24,20 @@ def get_changed_methods(git_path, child, parent=None, analyze_source_lines=True)
     repo_files = list(filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
                         repo.git.ls_files().split()))
     return get_changed_methods_from_file_diffs(CommitsDiff(child, parent, analyze_source_lines=analyze_source_lines).diffs)
+
+def get_commit_methods(git_path, child, parent=None, analyze_source_lines=True):
+    repo = git.Repo(git_path)
+    if isinstance(child, str):
+        child = repo.commit(child)
+    if not parent:
+        parent = child.parents[0]
+    file_diffs =  CommitsDiff(child, parent, analyze_source_lines=analyze_source_lines).diffs
+    methods = []
+    for file_diff in file_diffs:
+        gc.collect()
+        if file_diff.is_java_file():
+            methods.extend(file_diff.get_methods())
+    return methods
 
 
 def get_changed_exists_methods(git_path, child, parent=None, analyze_source_lines=True):
@@ -198,28 +212,3 @@ def get_bugs_data(gitPath, jira_project_name, jira_url, json_out, number_of_bugs
     with open(json_out, "wb") as f:
         json.dump(commits_and_issues(gitPath, issues), f)
 
-
-if __name__ == "__main__":
-    # get_bugs_data(r"z:\ev_repos\LANG", "LANG", r"http://issues.apache.org/jira", r"c:\temp\lang_issues.json")
-    # get_bugs_data(r"z:\ev_repos\WICKET", "WICKET", r"http://issues.apache.org/jira", r"c:\temp\wicket_issues.json")
-    # import git
-    # print map(lambda c: map(lambda f: f.b_path, c.parents[0].tree.diff(c.tree)), list(git.Repo(r'Z:\ev_repos\TIKA').iter_commits())[:10])
-    # exit()
-    # import timeit
-    # print timeit.timeit("import git; map(lambda c: c.stats, list(git.Repo(r'Z:\ev_repos\TIKA').iter_commits())[:100])", number=10)
-    # print timeit.timeit("import git; map(lambda c: c.parents[0].tree.diff(c.tree), list(git.Repo(r'Z:\ev_repos\TIKA').iter_commits())[:100])", number=10)
-    # exit()
-
-    print get_changed_methods(r"Z:\ev_repos\TIKA", "00eba49664049acc2b50889bff30308ff76d7342", analyze_source_lines=False)
-    exit()
-    c = get_changed_methods(r"Z:\ev_repos\COMPRESS",
-                              git.Repo(r"Z:\ev_repos\COMPRESS").commit("af2da2e151a8c76e217bc239616174cafbb702ec"))
-    c2 = get_changed_exists_methods(r"Z:\ev_repos\COMPRESS",
-                              git.Repo(r"Z:\ev_repos\COMPRESS").commit("af2da2e151a8c76e217bc239616174cafbb702ec"))
-    exit()
-    for c1 in c:
-        print c1
-        print "\n\t".join(map(repr, c1.get_changed_lines()))
-    assert len(args) == 6, "USAGE: diff.py git_path jira_project_name jira_url json_method_file json_bugs_file"
-    get_bugs_data(args[1], args[2], args[3], args[5])
-    get_methods_descriptions(args[1], args[4])

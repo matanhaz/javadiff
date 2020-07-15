@@ -1,5 +1,5 @@
 
-from FileDiff import FileDiff
+from .FileDiff import FileDiff
 
 
 class CommitsDiff(object):
@@ -10,6 +10,6 @@ class CommitsDiff(object):
     def diffs(child, parent, analyze_source_lines=True):
         for d in parent.tree.diff(child.tree, ignore_blank_lines=True, ignore_space_at_eol=True):
             try:
-                yield FileDiff(d, child.hexsha, analyze_source_lines=True)
+                yield FileDiff(d, child.hexsha, analyze_source_lines=analyze_source_lines)
             except Exception as e:
                 pass
