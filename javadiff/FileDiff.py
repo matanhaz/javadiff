@@ -1,8 +1,10 @@
 import difflib
 import gc
 import os
-
-from .SourceFile import SourceFile
+try:
+    from .SourceFile import SourceFile
+except:
+    from SourceFile import SourceFile
 
 
 class FileDiff(object):

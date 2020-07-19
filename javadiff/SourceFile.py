@@ -1,9 +1,11 @@
 import operator
-
 import javalang
-
-from .methodData import MethodData
 import os
+try:
+    from .methodData import MethodData
+except:
+    from methodData import MethodData
+
 
 class SourceFile(object):
     def __init__(self, contents, file_name, indices=(), analyze_source_lines=True):

@@ -1,5 +1,7 @@
-
-from .FileDiff import FileDiff
+try:
+    from .FileDiff import FileDiff
+except:
+    from FileDiff import FileDiff
 
 
 class CommitsDiff(object):

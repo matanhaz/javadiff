@@ -9,8 +9,12 @@ import sys
 import git
 import jira
 
-from .CommitsDiff import CommitsDiff
-from .FileDiff import FileDiff
+try:
+    from .CommitsDiff import CommitsDiff
+    from .FileDiff import FileDiff
+except:
+    from CommitsDiff import CommitsDiff
+    from FileDiff import FileDiff
 
 from functools import reduce
 
@@ -24,6 +28,7 @@ def get_changed_methods(git_path, child, parent=None, analyze_source_lines=True)
     repo_files = list(filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
                         repo.git.ls_files().split()))
     return get_changed_methods_from_file_diffs(CommitsDiff(child, parent, analyze_source_lines=analyze_source_lines).diffs)
+
 
 def get_commit_methods(git_path, child, parent=None, analyze_source_lines=True):
     repo = git.Repo(git_path)
@@ -62,6 +67,7 @@ def get_changed_methods_from_file_diffs(file_diffs):
         if file_diff.is_java_file():
             methods.extend(file_diff.get_changed_methods())
     return methods
+
 
 def get_changed_exists_methods_from_file_diffs(file_diffs):
     methods = []
@@ -133,8 +139,6 @@ def clean_commit_message(commit_message):
     return commit_message
 
 
-
-
 class Commit(object):
     def __init__(self, bug_id, git_commit):
         self._commit_id = git_commit.hexsha
@@ -180,8 +184,6 @@ class Commit(object):
         return new_files
 
 
-
-
 def commits_and_issues(git_path, issues):
     def replace(chars_to_replace, replacement, s):
         temp_s = s
@@ -206,9 +208,20 @@ def commits_and_issues(git_path, issues):
     return commits
 
 
-def get_bugs_data(gitPath, jira_project_name, jira_url, json_out, number_of_bugs=100):
+def get_bugs_data(gitPath, jira_project_name, json_out, jira_url= r"http://issues.apache.org/jira"):
     issues = get_jira_issues(jira_project_name, jira_url)
     issues = dict(map(lambda issue: (issue, issues[issue][1]), filter(lambda issue: issues[issue][0] == 'bug', issues)))
     with open(json_out, "wb") as f:
         json.dump(commits_and_issues(gitPath, issues), f)
 
+
+def topic_modeling_data(gitPath, jira_project_name, out_dir=r"c:\temp"):
+    import os
+    os.mkdir(os.path.join(out_dir, jira_project_name))
+    get_bugs_data(gitPath, jira_project_name, os.path.join(out_dir, jira_project_name, "bugs_data.json"))
+    get_methods_per_commit(gitPath, os.path.join(out_dir, jira_project_name, "methods_per_commit.json"))
+    get_methods_descriptions(gitPath, os.path.join(out_dir, jira_project_name, "methods_descriptions.json"))
+
+
+if __name__ == "__main__":
+    topic_modeling_data(r"Z:\ev_repos\MATH", "MATH")
