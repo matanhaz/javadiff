@@ -213,15 +213,3 @@ def get_bugs_data(gitPath, jira_project_name, json_out, jira_url= r"http://issue
     issues = dict(map(lambda issue: (issue, issues[issue][1]), filter(lambda issue: issues[issue][0] == 'bug', issues)))
     with open(json_out, "wb") as f:
         json.dump(commits_and_issues(gitPath, issues), f)
-
-
-def topic_modeling_data(gitPath, jira_project_name, out_dir=r"c:\temp"):
-    import os
-    os.mkdir(os.path.join(out_dir, jira_project_name))
-    get_methods_descriptions(gitPath, os.path.join(out_dir, jira_project_name, "methods_descriptions.json"))
-    get_methods_per_commit(gitPath, os.path.join(out_dir, jira_project_name, "methods_per_commit.json"))
-    get_bugs_data(gitPath, jira_project_name, os.path.join(out_dir, jira_project_name, "bugs_data.json"))
-
-
-if __name__ == "__main__":
-    topic_modeling_data(r"Z:\ev_repos\TILES", "TILES")
