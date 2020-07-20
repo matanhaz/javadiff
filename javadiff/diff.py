@@ -100,7 +100,7 @@ def get_methods_descriptions(git_path, json_out_file):
             map(lambda method: methods_descriptions.setdefault(method, StringIO.StringIO()).write(
                 commits[i + 1].message), methods)
     with open(json_out_file, "wb") as f:
-        data = dict(map(lambda x: (x[0], x[1].getvalue()), methods_descriptions.items()))
+        data = dict(map(lambda x: (x[0].method_name_parameters, x[1].getvalue()), methods_descriptions.items()))
         json.dump(data, f)
 
 
@@ -218,10 +218,10 @@ def get_bugs_data(gitPath, jira_project_name, json_out, jira_url= r"http://issue
 def topic_modeling_data(gitPath, jira_project_name, out_dir=r"c:\temp"):
     import os
     os.mkdir(os.path.join(out_dir, jira_project_name))
-    get_bugs_data(gitPath, jira_project_name, os.path.join(out_dir, jira_project_name, "bugs_data.json"))
-    get_methods_per_commit(gitPath, os.path.join(out_dir, jira_project_name, "methods_per_commit.json"))
     get_methods_descriptions(gitPath, os.path.join(out_dir, jira_project_name, "methods_descriptions.json"))
+    get_methods_per_commit(gitPath, os.path.join(out_dir, jira_project_name, "methods_per_commit.json"))
+    get_bugs_data(gitPath, jira_project_name, os.path.join(out_dir, jira_project_name, "bugs_data.json"))
 
 
 if __name__ == "__main__":
-    topic_modeling_data(r"Z:\ev_repos\MATH", "MATH")
+    topic_modeling_data(r"Z:\ev_repos\TILES", "TILES")
