@@ -1,7 +1,7 @@
 from diff import get_methods_descriptions, get_methods_per_commit, get_bugs_data
 import sys
 import os
-import shutill
+import shutil
 from projects import projects
 
 
