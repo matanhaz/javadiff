@@ -95,7 +95,7 @@ def get_methods_descriptions(git_path, json_out_file):
         if not commits[i + 1].hexsha[:commit_size] in commits_to_check:
             continue
         print("inspect commit {0} of {1}".format(i, len(commits)))
-        methods = get_changed_methods(git_path, commits[i + 1])
+        methods = get_changed_methods(git_path, commits[i + 1], analyze_source_lines=False)
         if methods:
             map(lambda method: methods_descriptions.setdefault(method, StringIO.StringIO()).write(
                 commits[i + 1].message), methods)
@@ -110,7 +110,7 @@ def get_methods_per_commit(git_path, json_out_file):
     methods_per_commit = {}
     for i in range(len(commits) - 1):
         try:
-            methods = get_changed_methods(git_path, commits[i + 1])
+            methods = get_changed_methods(git_path, commits[i + 1], analyze_source_lines=False)
         except:
             continue
         if methods:
