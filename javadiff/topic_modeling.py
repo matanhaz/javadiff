@@ -4,6 +4,7 @@ import os
 import shutil
 import git
 import gc
+import json
 from projects import projects
 from tempfile import mkdtemp
 try:
