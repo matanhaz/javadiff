@@ -90,7 +90,7 @@ def get_methods_descriptions(git_path, json_out_file):
     commits = list(repo.iter_commits())
     methods_descriptions = {}
     print("# commits to check: {0}".format(len(commits_to_check)))
-    for i in range(len(commits) - 1):
+    for i in range(len(commits[:30]) - 1):
         print("commit {0} of {1}".format(i, len(commits)))
         if not commits[i + 1].hexsha[:commit_size] in commits_to_check:
             continue
