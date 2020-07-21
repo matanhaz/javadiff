@@ -14,17 +14,18 @@ class SourceFile(object):
         self.file_name = file_name
         self.methods = dict()
         try:
-            if file_name.endswith(".java"):
-                tokens = list(javalang.tokenizer.tokenize("".join(self.contents)))
-                parser = javalang.parser.Parser(tokens)
-                parsed_data = parser.parse()
-                packages = list(map(operator.itemgetter(1), parsed_data.filter(javalang.tree.PackageDeclaration)))
-                classes = list(map(operator.itemgetter(1), parsed_data.filter(javalang.tree.ClassDeclaration)))
-                self.package_name = ''
-                if packages:
-                    self.package_name = packages[0].name
-                    self.modified_names = map(lambda c: self.package_name + "." + c.name, classes)
-                self.methods = self.get_methods_by_javalang(tokens, parsed_data, analyze_source_lines=analyze_source_lines)
+            tokens = list(javalang.tokenizer.tokenize("".join(self.contents)))
+            parser = javalang.parser.Parser(tokens)
+            parsed_data = parser.parse()
+            packages = list(map(operator.itemgetter(1), parsed_data.filter(javalang.tree.PackageDeclaration)))
+            classes = list(map(operator.itemgetter(1), parsed_data.filter(javalang.tree.ClassDeclaration)))
+            self.package_name = ''
+            if packages:
+                self.package_name = packages[0].name
+            else:
+                pass
+            self.modified_names = list(map(lambda c: self.package_name + "." + c.name, classes))
+            self.methods = self.get_methods_by_javalang(tokens, parsed_data, analyze_source_lines=analyze_source_lines)
         except:
             raise
 

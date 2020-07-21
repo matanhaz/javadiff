@@ -78,27 +78,30 @@ def get_changed_exists_methods_from_file_diffs(file_diffs):
     return methods
 
 
+def get_java_commits(git_path):
+    repo = git.Repo(git_path)
+    data = repo.git.log('--pretty=format:"sha: %H"', '--name-only').split("sha: ")
+    comms = dict(map(lambda d: (d[0], filter(lambda x: x.endswith(".java"), d[1:-1])),
+                     map(lambda d: d.replace('"', '').replace('\n\n', '\n').split('\n'), data)))
+    return dict(map(lambda x: (repo.commit(x), comms[x]), filter(lambda x: comms[x], comms)))
+
+
 def get_methods_descriptions(git_path, json_out_file):
     repo = git.Repo(git_path)
     repo_files = filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
                         repo.git.ls_files().split())
-    commits_to_check = reduce(set.__or__,
-                              map(lambda file_name: set(repo.git.log('--pretty=format:%h', file_name).split('\n')),
-                                  repo_files), set())
-    commit_size = min(set(map(lambda x: len(x), commits_to_check)))
-    commits_to_check = map(lambda x: x[:commit_size], commits_to_check)
-    commits = list(repo.iter_commits())
+    commits = []
+    for commit, files in get_java_commits(git_path).items():
+        if any(filter(lambda f: f in files, repo_files)):
+            commits.append(commit)
     methods_descriptions = {}
-    print("# commits to check: {0}".format(len(commits_to_check)))
+    print("# commits to check: {0}".format(len(commits)))
     for i in range(len(commits[:30]) - 1):
-        print("commit {0} of {1}".format(i, len(commits)))
-        if not commits[i + 1].hexsha[:commit_size] in commits_to_check:
-            continue
         print("inspect commit {0} of {1}".format(i, len(commits)))
-        methods = get_changed_methods(git_path, commits[i + 1], analyze_source_lines=False)
+        methods = get_changed_methods(git_path, commits[i], analyze_source_lines=False)
         if methods:
             map(lambda method: methods_descriptions.setdefault(method, StringIO.StringIO()).write(
-                commits[i + 1].message), methods)
+                commits[i].message), methods)
     with open(json_out_file, "wb") as f:
         data = dict(map(lambda x: (x[0].method_name_parameters, x[1].getvalue()), methods_descriptions.items()))
         json.dump(data, f)
