@@ -23,10 +23,10 @@ class FormatPatchDiff(object):
     DEV_NULL = '/dev/null'
 
     def __init__(self, lines):
-        assert lines[0].startswith('--- '), lines[0]
-        assert lines[1].startswith('+++ '), lines[1]
-        self.a_path = lines[0][4:].replace('\n', '').replace('a/', '')
-        self.b_path = lines[1][4:].replace('\n', '').replace('b/', '')
+        assert lines[2].startswith('--- '), lines[:3]
+        assert lines[3].startswith('+++ '), lines[:3]
+        self.a_path = lines[2][4:].replace('\n', '').replace('a/', '')
+        self.b_path = lines[3][4:].replace('\n', '').replace('b/', '')
         self.new_file = self.a_path == FormatPatchDiff.DEV_NULL
         self.deleted_file = self.b_path == FormatPatchDiff.DEV_NULL
         self.file_name = self.a_path if self.deleted_file else self.b_path
@@ -34,19 +34,17 @@ class FormatPatchDiff(object):
         self.after_contents = ['']
         if not '.java' in self.a_path and not '.java' in self.b_path:
             return
-        self.normal_diff = list(map(lambda x: x[0] + " " + x[1:], lines[3:]))
+        self.normal_diff = list(map(lambda x: x[0] + " " + x[1:], lines[5:]))
         if not self.new_file:
             self.before_contents = list(restore(self.normal_diff, 1))
         if not self.deleted_file:
             self.after_contents = list(restore(self.normal_diff, 2))
 
 
-
 class FormatPatchCommitsDiff(object):
     def __init__(self, file_name, analyze_source_lines=True):
         self.commit = FormatPatchCommitsDiff.read_commit_sha(file_name)
         self.diffs = list(FormatPatchCommitsDiff.diffs(file_name, analyze_source_lines=analyze_source_lines))
-
 
     @staticmethod
     def read_commit_sha(file_name):
@@ -68,7 +66,7 @@ class FormatPatchCommitsDiff(object):
             try:
                 if 'GIT binary' in lines[i1 + 2]:
                     continue
-                fd = FormatPatchDiff(lines[i1 + 2: i2])
+                fd = FormatPatchDiff(lines[i1: i2])
                 if fd.file_name.endswith(".java"):
                     yield FormatPatchFileDiff(fd, commit_sha, analyze_source_lines=analyze_source_lines)
             except IndexError as e:
