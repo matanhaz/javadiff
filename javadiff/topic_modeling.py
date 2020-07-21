@@ -23,9 +23,10 @@ def topic_modeling_data(project_ind):
     path_to_format_patch = mkdtemp()
     repo = git.Repo(git_path)
     commits_diffs = dict()
-    for f in repo.git.format_patch("--root", "-o", path_to_format_patch, "--function-context", "--unified=900000", "--no-renames", "--full-index", "--patch", "-k", "--numbered-files", "--no-stat", "-N").split():
+    for f in repo.git.format_patch("--root", "-o", path_to_format_patch, "--function-context", "--unified=900000", "--no-renames", "--full-index", "--patch", "-k", "--numbered-files", "--no-stat", "-N").split()[:10]:
         cd = FormatPatchCommitsDiff(os.path.normpath(os.path.join(path_to_format_patch, f)), analyze_source_lines=False)
-        commits_diffs[cd.commit] = cd
+        if cd.commit:
+            commits_diffs[repo.commit(cd.commit)] = cd
     # repo_files = list(filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
     #                     repo.git.ls_files().split()))
     #
@@ -34,8 +35,8 @@ def topic_modeling_data(project_ind):
         #     commits.append(commit)
     methods_descriptions = {}
     methods_per_commit = {}
-    for commit in list(repo.iter_commits())[:30]:
-        methods = get_changed_methods_from_file_diffs(commits_diffs[commit.hexsha].diffs)
+    for commit in commits_diffs:
+        methods = get_changed_methods_from_file_diffs(commits_diffs[commit].diffs)
         if methods:
             map(lambda method: methods_descriptions.setdefault(method, StringIO.StringIO()).write(
                 commit.message), methods)
