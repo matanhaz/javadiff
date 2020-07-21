@@ -23,8 +23,8 @@ class FormatPatchDiff(object):
     DEV_NULL = '/dev/null'
 
     def __init__(self, lines):
-        assert lines[0].startswith('--- ')
-        assert lines[1].startswith('+++ ')
+        assert lines[0].startswith('--- '), lines[0]
+        assert lines[1].startswith('+++ '), lines[1]
         self.a_path = lines[0][4:].replace('\n', '').replace('a/', '')
         self.b_path = lines[1][4:].replace('\n', '').replace('b/', '')
         self.new_file = self.a_path == FormatPatchDiff.DEV_NULL
