@@ -10,6 +10,10 @@ try:
     from .CommitsDiff import FormatPatchCommitsDiff
 except:
     from CommitsDiff import FormatPatchCommitsDiff
+try:
+    import StringIO
+except:
+    from io import StringIO
 
 
 def topic_modeling_data(project_ind):
