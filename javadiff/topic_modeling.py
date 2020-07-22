@@ -119,10 +119,6 @@ def topic_modeling_data(project_ind):
     path_to_format_patch = mkdtemp()
     repo = git.Repo(git_path)
     commits_diffs = dict()
-    for f in repo.git.format_patch("--root", "-o", path_to_format_patch, "--function-context", "--unified=900000", "--no-renames", "--full-index", "--patch", "-k", "--numbered-files", "--no-stat", "-N").split():
-        cd = FormatPatchCommitsDiff(os.path.normpath(os.path.join(path_to_format_patch, f)), analyze_source_lines=False)
-        if cd.commit:
-            commits_diffs[repo.commit(cd.commit)] = cd
     # repo_files = list(filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
     #                     repo.git.ls_files().split()))
     #
@@ -131,12 +127,16 @@ def topic_modeling_data(project_ind):
         #     commits.append(commit)
     methods_descriptions = {}
     methods_per_commit = {}
-    for commit in commits_diffs:
-        methods = get_changed_methods_from_file_diffs(commits_diffs[commit].diffs)
+    for f in repo.git.format_patch("--root", "-o", path_to_format_patch, "--function-context", "--unified=900000", "--no-renames", "--full-index", "--patch", "-k", "--numbered-files", "--no-stat", "-N").split():
+        gc.collect()
+        cd = FormatPatchCommitsDiff(os.path.normpath(os.path.join(path_to_format_patch, f)), analyze_source_lines=False)
+        if not cd.commit:
+            continue
+        methods = get_changed_methods_from_file_diffs(cd.diffs)
         if methods:
             map(lambda method: methods_descriptions.setdefault(method, StringIO.StringIO()).write(
-                commit.message), methods)
-            methods_per_commit[commit.hexsha] = list(map(repr, methods))
+                repo.commit(cd.commit).message), methods)
+            methods_per_commit[cd.commit] = list(map(repr, methods))
     with open(os.path.join(out_dir, jira_project_name, "methods_descriptions.json"), "wb") as f:
         data = dict(map(lambda x: (x[0].method_name_parameters, x[1].getvalue()), methods_descriptions.items()))
         json.dump(data, f)

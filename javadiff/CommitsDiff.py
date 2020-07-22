@@ -73,3 +73,5 @@ class FormatPatchCommitsDiff(object):
                 pass
             except JavaParserBaseException as e:
                 pass
+            except Exception as e:
+                print(e)
