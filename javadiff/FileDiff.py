@@ -23,8 +23,8 @@ class FileDiff(object):
             return
         before_contents = self.get_before_content_from_diff(diff, first_commit)
         after_contents = self.get_after_content_from_diff(diff, git_dir, second_commit)
-        before_contents = list(map(lambda x: x.decode("utf-8"), before_contents))
-        after_contents = list(map(lambda x: x.decode("utf-8"), after_contents))
+        before_contents = list(map(lambda x: x.decode("utf-8", errors='ignore'), before_contents))
+        after_contents = list(map(lambda x: x.decode("utf-8", errors='ignore'), after_contents))
         before_indices, after_indices = self.get_changed_indices(before_contents, after_contents)
         self.before_file = SourceFile(before_contents, diff.a_path, before_indices, analyze_source_lines=analyze_source_lines)
         self.after_file = SourceFile(after_contents, diff.b_path, after_indices, analyze_source_lines=analyze_source_lines)
