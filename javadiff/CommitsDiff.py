@@ -57,7 +57,7 @@ class FormatPatchCommitsDiff(object):
     @staticmethod
     def diffs(file_name, analyze_source_lines):
         with open(file_name) as f:
-            lines = list(filter(lambda l: 'file mode' not in l and 'new mode' not in l, f.readlines()[:-3]))
+            lines = list(filter(lambda l: 'file mode' not in l and 'new mode' not in l and 'old mode' not in l, f.readlines()[:-3]))
         if len(lines) == 0:
             raise StopIteration()
         commit_sha = str(lines[0].split()[1])  # line 0 word 1
