@@ -45,7 +45,13 @@ class SourceLine(object):
         for t in tokens:
             if t.position.line == line_number:
                     ans.append(t)
-        return dict(Counter(map(lambda x: type(x).__name__, ans)))
+        full_names = []
+        for t in ans:
+            if type(t).__name__ == 'Identifier':
+                full_names.append(type(t).__name__)
+            else:
+                full_names.append("{0}_{1}".format(type(t).__name__, t.value))
+        return dict(Counter(full_names))
 
 
 class MethodData(object):
