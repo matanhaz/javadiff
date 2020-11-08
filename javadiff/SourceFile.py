@@ -59,7 +59,7 @@ class SourceFile(object):
                 method_start_position = method.position
                 method_end_position = get_method_end_position(method, seperators)
                 method_used_lines = list(filter(lambda line: method_start_position.line <= line <= method_end_position.line, used_lines))
-                parameters = list(map(lambda parameter: parameter.type.name + ('[]' if parameter.varargs else ''), method.parameters))
+                parameters = list(map(lambda parameter: parameter.type.name + ('[]' if parameter.type.children[1] else ''), method.parameters))
                 method_data = MethodData(".".join([self.package_name, class_name, method.name]),
                                          method_start_position.line, method_end_position.line,
                                          self.contents, self.changed_indices, method_used_lines, parameters, self.file_name, method, analyze_source_lines=analyze_source_lines, tokens=tokens)
