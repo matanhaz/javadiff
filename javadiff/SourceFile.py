@@ -1,9 +1,11 @@
 import operator
-
 import javalang
-
-from .methodData import MethodData
 import os
+try:
+    from .methodData import MethodData
+except:
+    from methodData import MethodData
+
 
 class SourceFile(object):
     def __init__(self, contents, file_name, indices=(), analyze_source_lines=True):
@@ -12,17 +14,18 @@ class SourceFile(object):
         self.file_name = file_name
         self.methods = dict()
         try:
-            if file_name.endswith(".java"):
-                tokens = list(javalang.tokenizer.tokenize("".join(self.contents)))
-                parser = javalang.parser.Parser(tokens)
-                parsed_data = parser.parse()
-                packages = list(map(operator.itemgetter(1), parsed_data.filter(javalang.tree.PackageDeclaration)))
-                classes = list(map(operator.itemgetter(1), parsed_data.filter(javalang.tree.ClassDeclaration)))
-                self.package_name = ''
-                if packages:
-                    self.package_name = packages[0].name
-                    self.modified_names = map(lambda c: self.package_name + "." + c.name, classes)
-                self.methods = self.get_methods_by_javalang(tokens, parsed_data, analyze_source_lines=analyze_source_lines)
+            tokens = list(javalang.tokenizer.tokenize("".join(self.contents)))
+            parser = javalang.parser.Parser(tokens)
+            parsed_data = parser.parse()
+            packages = list(map(operator.itemgetter(1), parsed_data.filter(javalang.tree.PackageDeclaration)))
+            classes = list(map(operator.itemgetter(1), parsed_data.filter(javalang.tree.ClassDeclaration)))
+            self.package_name = ''
+            if packages:
+                self.package_name = packages[0].name
+            else:
+                pass
+            self.modified_names = list(map(lambda c: self.package_name + "." + c.name, classes))
+            self.methods = self.get_methods_by_javalang(tokens, parsed_data, analyze_source_lines=analyze_source_lines)
         except:
             raise
 
@@ -56,10 +59,10 @@ class SourceFile(object):
                 method_start_position = method.position
                 method_end_position = get_method_end_position(method, seperators)
                 method_used_lines = list(filter(lambda line: method_start_position.line <= line <= method_end_position.line, used_lines))
-                parameters = list(map(lambda parameter: parameter.type.name + ('[]' if parameter.varargs else ''), method.parameters))
+                parameters = list(map(lambda parameter: parameter.type.name + ('[]' if parameter.type.children[1] else ''), method.parameters))
                 method_data = MethodData(".".join([self.package_name, class_name, method.name]),
                                          method_start_position.line, method_end_position.line,
-                                         self.contents, self.changed_indices, method_used_lines, parameters, self.file_name, method, analyze_source_lines=analyze_source_lines)
+                                         self.contents, self.changed_indices, method_used_lines, parameters, self.file_name, method, analyze_source_lines=analyze_source_lines, tokens=tokens)
                 methods_dict[method_data.id] = method_data
         return methods_dict
 

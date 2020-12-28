@@ -1,8 +1,10 @@
 import difflib
 import gc
 import os
-
-from .SourceFile import SourceFile
+try:
+    from .SourceFile import SourceFile
+except:
+    from SourceFile import SourceFile
 
 
 class FileDiff(object):
@@ -19,8 +21,38 @@ class FileDiff(object):
         self.is_ok = self.file_name.endswith(".java")
         if not self.is_ok:
             return
-        before_contents = ['']
+        before_contents = self.get_before_content_from_diff(diff, first_commit)
+        after_contents = self.get_after_content_from_diff(diff, git_dir, second_commit)
+        before_contents = list(map(lambda x: x.decode("utf-8", errors='ignore'), before_contents))
+        after_contents = list(map(lambda x: x.decode("utf-8", errors='ignore'), after_contents))
+        before_indices, after_indices = self.get_changed_indices(before_contents, after_contents)
+        self.before_file = SourceFile(before_contents, diff.a_path, before_indices, analyze_source_lines=analyze_source_lines)
+        self.after_file = SourceFile(after_contents, diff.b_path, after_indices, analyze_source_lines=analyze_source_lines)
+        self.modified_names = self.after_file.modified_names
+
+    def get_after_content_from_diff(self, diff, git_dir, second_commit):
         after_contents = ['']
+        if diff.deleted_file:
+            assert diff.b_blob is None
+        else:
+            try:
+                after_contents = diff.b_blob.data_stream.stream.readlines()
+            except:
+                if second_commit:
+                    try:
+                        after_contents = second_commit.repo.git.show(
+                            "{0}:{1}".format(second_commit.hexsha, diff.b_path)).split('\n')
+                    except:
+                        gc.collect()
+                elif git_dir:
+                    path = os.path.join(git_dir, diff.b_path)
+                    with open(path) as f:
+                        after_contents = f.readlines()
+                gc.collect()
+        return after_contents
+
+    def get_before_content_from_diff(self, diff, first_commit):
+        before_contents = ['']
         if diff.new_file:
             assert diff.a_blob is None
         else:
@@ -30,31 +62,11 @@ class FileDiff(object):
                 gc.collect()
                 if first_commit:
                     try:
-                        before_contents = first_commit.repo.git.show("{0}:{1}".format(first_commit.hexsha, diff.a_path)).split('\n')
+                        before_contents = first_commit.repo.git.show(
+                            "{0}:{1}".format(first_commit.hexsha, diff.a_path)).split('\n')
                     except:
                         gc.collect()
-        if diff.deleted_file:
-            assert diff.b_blob is None
-        else:
-            try:
-                after_contents = diff.b_blob.data_stream.stream.readlines()
-            except:
-                if second_commit:
-                    try:
-                        after_contents = second_commit.repo.git.show("{0}:{1}".format(second_commit.hexsha, diff.b_path)).split('\n')
-                    except:
-                        gc.collect()
-                elif git_dir:
-                    path = os.path.join(git_dir, diff.b_path)
-                    with open(path) as f:
-                        after_contents = f.readlines()
-                gc.collect()
-        before_contents = list(map(lambda x: x.decode("utf-8"), before_contents))
-        after_contents = list(map(lambda x: x.decode("utf-8"), after_contents))
-        before_indices, after_indices = self.get_changed_indices(before_contents, after_contents)
-        self.before_file = SourceFile(before_contents, diff.a_path, before_indices, analyze_source_lines=analyze_source_lines)
-        self.after_file = SourceFile(after_contents, diff.b_path, after_indices, analyze_source_lines=analyze_source_lines)
-        self.modified_names = self.after_file.modified_names
+        return before_contents
 
     def is_java_file(self):
         return self.is_ok
@@ -102,3 +114,11 @@ class FileDiff(object):
 
     def __repr__(self):
         return self.file_name
+
+
+class FormatPatchFileDiff(FileDiff):
+    def get_after_content_from_diff(self, diff, git_dir, second_commit):
+        return diff.after_contents
+
+    def get_before_content_from_diff(self, diff, first_commit):
+        return diff.before_contents
