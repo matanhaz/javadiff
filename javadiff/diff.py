@@ -15,15 +15,13 @@ from .FileDiff import FileDiff
 from functools import reduce
 
 
-def get_changed_methods(git_path, child, parent=None, analyze_source_lines=True):
+def get_commit_diff(git_path, child, parent=None, analyze_source_lines=True):
     repo = git.Repo(git_path)
     if isinstance(child, str):
         child = repo.commit(child)
     if not parent:
         parent = child.parents[0]
-    repo_files = list(filter(lambda x: x.endswith(".java") and not x.lower().endswith("test.java"),
-                        repo.git.ls_files().split()))
-    return get_changed_methods_from_file_diffs(CommitsDiff(child, parent, analyze_source_lines=analyze_source_lines).diffs)
+    return CommitsDiff(child, parent, analyze_source_lines=analyze_source_lines)
 
 def get_commit_methods(git_path, child, parent=None, analyze_source_lines=True):
     repo = git.Repo(git_path)

@@ -13,3 +13,12 @@ class CommitsDiff(object):
                 yield FileDiff(d, child.hexsha, analyze_source_lines=analyze_source_lines)
             except Exception as e:
                 pass
+    
+    def get_methods_dict(self):
+        all_dicts = list(map(lambda f: f.get_methods_dict(), filter(lambda x: x.is_ok, self.diffs)))
+        ans = {'before_changed': [], 'before_unchanged': [],
+                'after_changed': [], 'after_unchanged': []}
+        for d in all_dicts:
+            for k in d:
+                ans[k].extend(d[k])
+        return ans
