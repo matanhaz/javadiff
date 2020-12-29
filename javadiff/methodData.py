@@ -44,7 +44,8 @@ class SourceLine(object):
             ans[l] = []
         for e in parsed_body:
             for e2 in map(getter, e.filter(object)):
-                if any(list(filter(helper, map(getter, e2.filter(javalang.ast.Node))))):
+                e3 = list(filter(helper, map(getter, e2.filter(javalang.ast.Node))))
+                for x in e3:
                     ans[x.position.line].append(e2)
         res = {}
         for l in ans:
@@ -55,9 +56,11 @@ class SourceLine(object):
     def get_tokens_by_lines(tokens, lines):
         def get_name(t):
             if type(t).__name__ == 'Identifier':
-                return type(t).__name__
-            else:
+                # return type(t).__name__
                 return "{0}_{1}".format(type(t).__name__, t.value)
+            else:
+                # return "{0}_{1}".format(type(t).__name__, t.value)
+                return type(t).__name__
         ans = {}
         for l in lines:
             ans[l] = []
@@ -67,7 +70,7 @@ class SourceLine(object):
         res = {}
         for l in ans:
             res[l] = dict(Counter(ans[l]))
-        return dict(Counter(full_names))
+        return res
 
 
 class MethodData(object):
