@@ -26,7 +26,7 @@ class SourceLine(object):
                 continue
             used_lines.append(line_number)
         decls = SourceLine.get_decls_by_lines(parsed_body, list(map(lambda x: x + 1, used_lines)))
-        tokens_types = SourceLine.get_tokens_by_lines(parsed_body, list(map(lambda x: x + 1, used_lines)))
+        tokens_types = SourceLine.get_tokens_by_lines(tokens, list(map(lambda x: x + 1, used_lines)))
         for line_number in used_lines:
             line = contents[line_number]
             is_changed = line_number in changed_indices
@@ -55,7 +55,7 @@ class SourceLine(object):
     @staticmethod
     def get_tokens_by_lines(tokens, lines):
         def get_name(t):
-            if type(t).__name__ == 'Identifier':
+            if type(t).__name__ not in ['Identifier', 'DecimalInteger']:
                 # return type(t).__name__
                 return "{0}_{1}".format(type(t).__name__, t.value)
             else:
