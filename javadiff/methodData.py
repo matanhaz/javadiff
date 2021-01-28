@@ -20,38 +20,57 @@ class SourceLine(object):
     @staticmethod
     def get_source_lines(start_line, end_line, contents, changed_indices, method_used_lines, parsed_body, tokens=None):
         source_lines = []
+        used_lines = []
         for line_number in range(start_line - 1, end_line):
             if line_number not in method_used_lines:
                 continue
-            decls = SourceLine.get_decl_at_line(parsed_body, line_number+1)
-            tokens_types = SourceLine.get_tokens_at_line(tokens, line_number + 1)
+            used_lines.append(line_number)
+        decls = SourceLine.get_decls_by_lines(parsed_body, list(map(lambda x: x + 1, used_lines)))
+        tokens_types = SourceLine.get_tokens_by_lines(tokens, list(map(lambda x: x + 1, used_lines)))
+        for line_number in used_lines:
             line = contents[line_number]
             is_changed = line_number in changed_indices
-            source_lines.append(SourceLine(line, line_number, is_changed, line_number-start_line, decls, tokens_types))
+            source_lines.append(SourceLine(line, line_number, is_changed, line_number-start_line, decls[line_number + 1], tokens_types[line_number + 1]))
         return source_lines
 
     @staticmethod
-    def get_decl_at_line(parsed_body, line_number):
-        ans = []
+    def get_decls_by_lines(parsed_body, lines):
+        def helper(x):
+            return x.position and x.position.line in lines
+        def getter(x):
+            return x[1]
+        ans = {}
+        for l in lines:
+            ans[l] = []
         for e in parsed_body:
-            for e2 in map(operator.itemgetter(1), e.filter(object)):
-                if any(list(filter(lambda x: x.position and x.position.line==line_number, map(operator.itemgetter(1), e2.filter(javalang.ast.Node))))):
-                    ans.append(e2)
-        return dict(Counter(map(lambda x: type(x).__name__, ans)))
+            for e2 in map(getter, e.filter(object)):
+                e3 = list(filter(helper, map(getter, e2.filter(javalang.ast.Node))))
+                for x in e3:
+                    ans[x.position.line].append(e2)
+        res = {}
+        for l in ans:
+            res[l] = dict(Counter(map(lambda x: type(x).__name__, ans[l])))
+        return res
 
     @staticmethod
-    def get_tokens_at_line(tokens, line_number):
-        ans = []
-        for t in tokens:
-            if t.position.line == line_number:
-                    ans.append(t)
-        full_names = []
-        for t in ans:
-            if type(t).__name__ == 'Identifier':
-                full_names.append(type(t).__name__)
+    def get_tokens_by_lines(tokens, lines):
+        def get_name(t):
+            if type(t).__name__ not in ['Identifier', 'DecimalInteger']:
+                # return type(t).__name__
+                return "{0}_{1}".format(type(t).__name__, t.value)
             else:
-                full_names.append("{0}_{1}".format(type(t).__name__, t.value))
-        return dict(Counter(full_names))
+                # return "{0}_{1}".format(type(t).__name__, t.value)
+                return type(t).__name__
+        ans = {}
+        for l in lines:
+            ans[l] = []
+        for t in tokens:
+            if t.position.line in lines:
+                    ans[t.position.line].append(get_name(t))
+        res = {}
+        for l in ans:
+            res[l] = dict(Counter(ans[l]))
+        return res
 
 
 class MethodData(object):

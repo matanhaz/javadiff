@@ -71,6 +71,7 @@ class FileDiff(object):
     def is_java_file(self):
         return self.is_ok
 
+
     @staticmethod
     def get_changed_indices(before_contents, after_contents):
         def get_lines_by_prefixes(lines, prefixes):
@@ -96,6 +97,16 @@ class FileDiff(object):
 
     def get_methods(self):
         return list(self.before_file.methods.values()) + list(self.after_file.methods.values())
+
+    def get_methods_dict(self):
+        before = list(self.before_file.methods.values())
+        after = list(self.after_file.methods.values())
+        before_changed = list(filter(lambda x: x.changed, before))
+        before_unchanged = list(filter(lambda x: not x.changed, before))
+        after_changed = list(filter(lambda x: x.changed, after))
+        after_unchanged = list(filter(lambda x: not x.changed, after))
+        return {'before_changed': before_changed, 'before_unchanged': before_unchanged,
+                'after_changed': after_changed, 'after_unchanged': after_unchanged}
 
     def get_changed_exists_methods(self):
         return list(filter(lambda m: m.id in self.before_file.methods, self.after_file.get_changed_methods())) + \
