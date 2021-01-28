@@ -2,9 +2,11 @@ import operator
 import javalang
 from collections import Counter
 
+
 class SourceLine(object):
-    def __init__(self, line, line_number, is_changed, ordinal, decls, tokens):
+    def __init__(self, line, halstead_line, line_number, is_changed, ordinal, decls, tokens):
         self.line = line.strip()
+        self.halstead = halstead_line.getValuesVector()
         self.line_number = line_number
         self.is_changed = is_changed
         self.ordinal = ordinal
@@ -18,7 +20,7 @@ class SourceLine(object):
         return "{0}{1}: {2}".format(start, str(self.line_number), self.line)
 
     @staticmethod
-    def get_source_lines(start_line, end_line, contents, changed_indices, method_used_lines, parsed_body, tokens=None):
+    def get_source_lines(start_line, end_line, contents, halstead_lines, changed_indices, method_used_lines, parsed_body, tokens):
         source_lines = []
         used_lines = []
         for line_number in range(start_line - 1, end_line):
@@ -29,8 +31,9 @@ class SourceLine(object):
         tokens_types = SourceLine.get_tokens_by_lines(tokens, list(map(lambda x: x + 1, used_lines)))
         for line_number in used_lines:
             line = contents[line_number]
+            halstead_line = halstead_lines[line_number]
             is_changed = line_number in changed_indices
-            source_lines.append(SourceLine(line, line_number, is_changed, line_number-start_line, decls[line_number + 1], tokens_types[line_number + 1]))
+            source_lines.append(SourceLine(line, halstead_line, line_number, is_changed, line_number-start_line, decls[line_number + 1], tokens_types[line_number + 1]))
         return source_lines
 
     @staticmethod
@@ -74,7 +77,7 @@ class SourceLine(object):
 
 
 class MethodData(object):
-    def __init__(self, method_name, start_line, end_line, contents, changed_indices, method_used_lines, parameters, file_name, method_decl, analyze_source_lines=True, tokens=None):
+    def __init__(self, method_name, start_line, end_line, contents, halstead_lines, changed_indices, method_used_lines, parameters, file_name, method_decl, tokens, analyze_source_lines=True):
         self.method_name = method_name
         self.start_line = int(start_line)
         self.end_line = int(end_line)
@@ -91,7 +94,7 @@ class MethodData(object):
         self.source_lines = None
         self.changed = self._is_changed(changed_indices)
         if analyze_source_lines:
-            self.source_lines = SourceLine.get_source_lines(start_line, end_line, contents, changed_indices, method_used_lines, method_decl.body, tokens)
+            self.source_lines = SourceLine.get_source_lines(start_line, end_line, contents, halstead_lines, changed_indices, method_used_lines, method_decl.body, tokens)
 
     def _is_changed(self, indices=None):
         if self.source_lines:

@@ -2,9 +2,11 @@ import operator
 import javalang
 import os
 try:
+    from .commented_code_detector import CommentFilter
     from .methodData import MethodData
 except:
     from methodData import MethodData
+    from commented_code_detector import CommentFilter
 
 
 class SourceFile(object):
@@ -44,6 +46,7 @@ class SourceFile(object):
                 if counter == 0:
                     return seperator.position
 
+        halstead_lines = CommentFilter().filterComments(self.contents)[0]
         used_lines = set(map(lambda t: t.position.line-1, tokens))
         seperators = list(filter(lambda token: isinstance(token, javalang.tokenizer.Separator) and token.value in "{}",
                             tokens))
@@ -62,7 +65,7 @@ class SourceFile(object):
                 parameters = list(map(lambda parameter: parameter.type.name + ('[]' if parameter.type.children[1] else ''), method.parameters))
                 method_data = MethodData(".".join([self.package_name, class_name, method.name]),
                                          method_start_position.line, method_end_position.line,
-                                         self.contents, self.changed_indices, method_used_lines, parameters, self.file_name, method, analyze_source_lines=analyze_source_lines, tokens=tokens)
+                                         self.contents, halstead_lines, self.changed_indices, method_used_lines, parameters, self.file_name, method, tokens, analyze_source_lines=analyze_source_lines)
                 methods_dict[method_data.id] = method_data
         return methods_dict
 
