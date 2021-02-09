@@ -1,12 +1,17 @@
 import operator
 import javalang
 from collections import Counter
+try:
+    from .commented_code_detector import Halstead
+except:
+    from commented_code_detector import Halstead
 
 
 class SourceLine(object):
     def __init__(self, line, halstead_line, line_number, is_changed, ordinal, decls, tokens):
         self.line = line.strip()
-        self.halstead = halstead_line.getValuesVector()
+        self.halstead_line = halstead_line
+        self.halstead = self.halstead_line.getValuesVector()
         self.line_number = line_number
         self.is_changed = is_changed
         self.ordinal = ordinal
@@ -95,6 +100,7 @@ class MethodData(object):
         self.changed = self._is_changed(changed_indices)
         if analyze_source_lines:
             self.source_lines = SourceLine.get_source_lines(start_line, end_line, contents, halstead_lines, changed_indices, method_used_lines, method_decl.body, tokens)
+            self.halstead = Halstead(list(map(lambda x: x.halstead, self.source_lines))).getValuesVector()
 
     def _is_changed(self, indices=None):
         if self.source_lines:
