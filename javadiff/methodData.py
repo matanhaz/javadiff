@@ -63,7 +63,7 @@ class SourceLine(object):
     @staticmethod
     def get_tokens_by_lines(tokens, lines):
         def get_name(t):
-            if type(t).__name__ not in ['Identifier', 'DecimalInteger']:
+            if type(t).__name__ not in ['String', 'Identifier', 'DecimalFloatingPoint', 'DecimalInteger', 'HexInteger', 'OctalInteger' ]:
                 # return type(t).__name__
                 return "{0}_{1}".format(type(t).__name__, t.value)
             else:
