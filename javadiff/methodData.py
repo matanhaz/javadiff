@@ -100,7 +100,7 @@ class MethodData(object):
         self.changed = self._is_changed(changed_indices)
         if analyze_source_lines:
             self.source_lines = SourceLine.get_source_lines(start_line, end_line, contents, halstead_lines, changed_indices, method_used_lines, method_decl.body, tokens)
-            self.halstead = Halstead(list(map(lambda x: x.halstead, self.source_lines))).getValuesVector()
+            self.halstead = Halstead(list(map(lambda x: x.halstead_line, self.source_lines))).getValuesVector()
 
     def _is_changed(self, indices=None):
         if self.source_lines:

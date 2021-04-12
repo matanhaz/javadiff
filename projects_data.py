@@ -44,7 +44,6 @@ def get_bugs_data(gitPath, jira_project_name, jira_url, json_out, number_of_bugs
 
 if __name__ == "__main__":
     args = sys.argv
-    print
     get_changed_methods(r"C:\Temp\commons-lang",
                         git.Repo(r"C:\Temp\commons-lang").commit("a40b2a907a69e51675d7d0502b2608833c4da343"))
     assert len(args) == 6, "USAGE: diff.py git_path jira_project_name jira_url json_method_file json_bugs_file"
