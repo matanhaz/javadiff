@@ -8,7 +8,7 @@ except:
 
 
 class SourceLine(object):
-    def __init__(self, line, halstead_line, line_number, is_changed, ordinal, decls, tokens):
+    def __init__(self, line, halstead_line, line_number, is_changed, ordinal, decls, tokens, indent_level):
         self.line = line.strip()
         self.halstead_line = halstead_line
         self.halstead = self.halstead_line.getValuesVector()
@@ -17,6 +17,7 @@ class SourceLine(object):
         self.ordinal = ordinal
         self.decls = decls
         self.tokens = tokens
+        self.indent_level = indent_level
 
     def __repr__(self):
         start = "  "
@@ -32,13 +33,13 @@ class SourceLine(object):
             if line_number not in method_used_lines:
                 continue
             used_lines.append(line_number)
-        decls = SourceLine.get_decls_by_lines(parsed_body, list(map(lambda x: x + 1, used_lines)))
+        decls, indent_level = SourceLine.get_decls_by_lines(parsed_body, list(map(lambda x: x + 1, used_lines)))
         tokens_types = SourceLine.get_tokens_by_lines(tokens, list(map(lambda x: x + 1, used_lines)))
         for line_number in used_lines:
             line = contents[line_number]
             halstead_line = halstead_lines[line_number]
             is_changed = line_number in changed_indices
-            source_lines.append(SourceLine(line, halstead_line, line_number, is_changed, line_number-start_line, decls[line_number + 1], tokens_types[line_number + 1]))
+            source_lines.append(SourceLine(line, halstead_line, line_number, is_changed, line_number-start_line, decls[line_number + 1], tokens_types[line_number + 1], indent_level[line_number + 1]))
         return source_lines
 
     @staticmethod
@@ -47,18 +48,35 @@ class SourceLine(object):
             return x.position and x.position.line in lines
         def getter(x):
             return x[1]
+        def all_subclasses(cls):
+            return set(cls.__subclasses__()).union(
+                [s for c in cls.__subclasses__() for s in all_subclasses(c)])
+        by_classes = list(map(lambda c: c.__name__, all_subclasses(javalang.ast.Node)))
+        base_column = parsed_body[0].position.column
+        cols = set([base_column])
         ans = {}
+        indentetions = {}
+        indent_level = {}
         for l in lines:
             ans[l] = []
+            indentetions[l] = []
+            indent_level[l] = []
         for e in parsed_body:
-            for e2 in map(getter, e.filter(object)):
+            for path, e2 in e.filter(object):
                 e3 = list(filter(helper, map(getter, e2.filter(javalang.ast.Node))))
                 for x in e3:
+                    cols.add(x.position.column)
+                    indentetions[x.position.line].append(x.position.column)
                     ans[x.position.line].append(e2)
+        levels = dict(map(reversed, enumerate(sorted(cols))))
+        for line in indentetions:
+            if indentetions[line]:
+                indent_level[line] = min(list(map(levels.get, indentetions[line])))
         res = {}
         for l in ans:
-            res[l] = dict(Counter(map(lambda x: type(x).__name__, ans[l])))
-        return res
+            res[l] = dict.fromkeys(by_classes, 0)
+            res[l].update(dict(Counter(map(lambda x: type(x).__name__, ans[l]))))
+        return res, indent_level
 
     @staticmethod
     def get_tokens_by_lines(tokens, lines):
@@ -82,7 +100,7 @@ class SourceLine(object):
 
 
 class MethodData(object):
-    def __init__(self, method_name, start_line, end_line, contents, halstead_lines, changed_indices, method_used_lines, parameters, file_name, method_decl, tokens, analyze_source_lines=True):
+    def __init__(self, method_name, start_line, end_line, contents, halstead_lines, changed_indices, method_used_lines, parameters, file_name, method_decl, tokens, analyze_source_lines=True, lizard_method=None):
         self.method_name = method_name
         self.start_line = int(start_line)
         self.end_line = int(end_line)
@@ -98,6 +116,10 @@ class MethodData(object):
         self.id = self.file_name + "@" + self.method_name_parameters
         self.source_lines = None
         self.changed = self._is_changed(changed_indices)
+        self.lizard_method = lizard_method
+        if lizard_method:
+            for att in ['cyclomatic_complexity', 'nloc', 'token_count', 'name', 'long_name', 'start_line', 'end_line', 'full_parameters', 'filename', 'top_nesting_level', 'length', 'fan_in', 'fan_out', 'general_fan_out']:
+                setattr(self, 'lizard_'+att, getattr(self.lizard_method, att))
         if analyze_source_lines:
             self.source_lines = SourceLine.get_source_lines(start_line, end_line, contents, halstead_lines, changed_indices, method_used_lines, method_decl.body, tokens)
             self.halstead = Halstead(list(map(lambda x: x.halstead_line, self.source_lines))).getValuesVector()

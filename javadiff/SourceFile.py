@@ -1,6 +1,9 @@
 import operator
 import javalang
 import os
+import lizard
+import tempfile
+import traceback
 try:
     from .commented_code_detector import CommentFilter
     from .methodData import MethodData
@@ -14,8 +17,15 @@ class SourceFile(object):
         self.contents = contents
         self.changed_indices = indices
         self.file_name = file_name
+        self.lizard_analysis = None
         self.methods = dict()
         try:
+            f, path_to_lizard = tempfile.mkstemp()
+            os.close(f)
+            with open(path_to_lizard, 'w') as f:
+                f.writelines(contents)
+            self.lizard_analysis = lizard.analyze_file(path_to_lizard)
+            os.remove(path_to_lizard)
             tokens = list(javalang.tokenizer.tokenize("".join(self.contents)))
             parser = javalang.parser.Parser(tokens)
             parsed_data = parser.parse()
@@ -28,7 +38,8 @@ class SourceFile(object):
                 pass
             self.modified_names = list(map(lambda c: self.package_name + "." + c.name, classes))
             self.methods = self.get_methods_by_javalang(tokens, parsed_data, analyze_source_lines=analyze_source_lines)
-        except:
+        except Exception as e:
+            traceback.print_exc()
             raise
 
     def get_methods_by_javalang(self, tokens, parsed_data, analyze_source_lines=True):
@@ -63,9 +74,14 @@ class SourceFile(object):
                 method_end_position = get_method_end_position(method, seperators)
                 method_used_lines = list(filter(lambda line: method_start_position.line <= line <= method_end_position.line, used_lines))
                 parameters = list(map(lambda parameter: parameter.type.name + ('[]' if parameter.type.children[1] else ''), method.parameters))
+                lizard_method = list(filter(lambda f: f.start_line == method_start_position.line, self.lizard_analysis.function_list))
+                if lizard_method:
+                    lizard_method = lizard_method[0]
+                else:
+                    lizard_method = None
                 method_data = MethodData(".".join([self.package_name, class_name, method.name]),
                                          method_start_position.line, method_end_position.line,
-                                         self.contents, halstead_lines, self.changed_indices, method_used_lines, parameters, self.file_name, method, tokens, analyze_source_lines=analyze_source_lines)
+                                         self.contents, halstead_lines, self.changed_indices, method_used_lines, parameters, self.file_name, method, tokens, analyze_source_lines=analyze_source_lines, lizard_method=lizard_method)
                 methods_dict[method_data.id] = method_data
         return methods_dict
 
