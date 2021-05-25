@@ -6,9 +6,9 @@ import tempfile
 import traceback
 try:
     from .commented_code_detector import CommentFilter
-    from .methodData import MethodData
+    from .methodData import MethodData, SourceLine
 except:
-    from methodData import MethodData
+    from methodData import MethodData, SourceLine
     from commented_code_detector import CommentFilter
 
 
@@ -25,6 +25,14 @@ class SourceFile(object):
             with open(path_to_lizard, 'w') as f:
                 f.writelines(contents)
             self.lizard_analysis = lizard.analyze_file(path_to_lizard)
+            self.lizard_values = {}
+            for att in ['CCN', 'ND', 'average_cyclomatic_complexity', 'average_nloc', 'average_token_count', 'nloc', 'token_count']:
+                try:
+                    setattr(self, 'lizard_' + att, getattr(self.lizard_analysis, att))
+                    self.lizard_values[att] = getattr(self.lizard_analysis, att)
+                except:
+                    setattr(self, 'lizard_' + att, None)
+                    self.lizard_values[att] = 0
             os.remove(path_to_lizard)
             tokens = list(javalang.tokenizer.tokenize("".join(self.contents)))
             parser = javalang.parser.Parser(tokens)
@@ -37,7 +45,12 @@ class SourceFile(object):
             else:
                 pass
             self.modified_names = list(map(lambda c: self.package_name + "." + c.name, classes))
-            self.methods = self.get_methods_by_javalang(tokens, parsed_data, analyze_source_lines=analyze_source_lines)
+            self.methods, self.used_lines = self.get_methods_by_javalang(tokens, parsed_data, analyze_source_lines=analyze_source_lines)
+            self.used_changed_lines = set(self.changed_indices).intersection(self.used_lines)
+            if analyze_source_lines:
+                self.decls = SourceLine.get_decles_empty_dict()
+                for k in self.decls:
+                    self.decls[k] = sum(list(map(lambda m: self.methods[m].decls[k], self.methods)))
         except Exception as e:
             traceback.print_exc()
             raise
@@ -83,7 +96,7 @@ class SourceFile(object):
                                          method_start_position.line, method_end_position.line,
                                          self.contents, halstead_lines, self.changed_indices, method_used_lines, parameters, self.file_name, method, tokens, analyze_source_lines=analyze_source_lines, lizard_method=lizard_method)
                 methods_dict[method_data.id] = method_data
-        return methods_dict
+        return methods_dict, used_lines
 
     def get_changed_methods(self):
         return list(filter(lambda method: method.changed, self.methods.values()))

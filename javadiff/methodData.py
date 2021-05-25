@@ -6,8 +6,17 @@ try:
 except:
     from commented_code_detector import Halstead
 
+def get_decles_names():
+    def all_subclasses(cls):
+        return set(cls.__subclasses__()).union(
+            [s for c in cls.__subclasses__() for s in all_subclasses(c)])
+
+    return list(map(lambda c: c.__name__, all_subclasses(javalang.ast.Node)))
+
 
 class SourceLine(object):
+    DECALS_LIST = get_decles_names()
+
     def __init__(self, line, halstead_line, line_number, is_changed, ordinal, decls, tokens, indent_level):
         self.line = line.strip()
         self.halstead_line = halstead_line
@@ -42,16 +51,17 @@ class SourceLine(object):
             source_lines.append(SourceLine(line, halstead_line, line_number, is_changed, line_number-start_line, decls[line_number + 1], tokens_types[line_number + 1], indent_level[line_number + 1]))
         return source_lines
 
+
+    @staticmethod
+    def get_decles_empty_dict():
+        return dict.fromkeys(SourceLine.DECALS_LIST, 0)
+
     @staticmethod
     def get_decls_by_lines(parsed_body, lines):
         def helper(x):
             return x.position and x.position.line in lines
         def getter(x):
             return x[1]
-        def all_subclasses(cls):
-            return set(cls.__subclasses__()).union(
-                [s for c in cls.__subclasses__() for s in all_subclasses(c)])
-        by_classes = list(map(lambda c: c.__name__, all_subclasses(javalang.ast.Node)))
         base_column = parsed_body[0].position.column
         cols = set([base_column])
         ans = {}
@@ -62,24 +72,32 @@ class SourceLine(object):
             indentetions[l] = []
             indent_level[l] = []
         for e in parsed_body:
-            for path, e2 in e.filter(object):
-                e3 = list(filter(helper, map(getter, e2.filter(javalang.ast.Node))))
-                for x in e3:
-                    cols.add(x.position.column)
-                    indentetions[x.position.line].append(x.position.column)
-                    ans[x.position.line].append(e2)
+            for path, x in e.filter(javalang.ast.Node):
+                # for x in list(filter(helper, map(getter, e2.filter()))):
+                position = x.position
+                if position is None:
+                    position = list(filter(helper, map(getter, x.filter(javalang.ast.Node))))
+                    if position:
+                        position = position[0].position
+                    else:
+                        continue
+                cols.add(position.column)
+                indentetions[position.line].append(position.column)
+                ans[position.line].append(x)
         levels = dict(map(reversed, enumerate(sorted(cols))))
         for line in indentetions:
             if indentetions[line]:
                 indent_level[line] = min(list(map(levels.get, indentetions[line])))
         res = {}
         for l in ans:
-            res[l] = dict.fromkeys(by_classes, 0)
-            res[l].update(dict(Counter(map(lambda x: type(x).__name__, ans[l]))))
+            res[l] = SourceLine.get_decles_empty_dict()
+            for k, v in dict(Counter(map(lambda x: type(x).__name__, ans[l]))).items():
+                res[l][k] = v
         return res, indent_level
 
     @staticmethod
     def get_tokens_by_lines(tokens, lines):
+        return dict(map(lambda l: (l, {}), lines))
         def get_name(t):
             if type(t).__name__ not in ['String', 'Identifier', 'DecimalFloatingPoint', 'DecimalInteger', 'HexInteger', 'OctalInteger' ]:
                 # return type(t).__name__
@@ -117,12 +135,18 @@ class MethodData(object):
         self.source_lines = None
         self.changed = self._is_changed(changed_indices)
         self.lizard_method = lizard_method
+        self.lizard_values = {}
         if lizard_method:
             for att in ['cyclomatic_complexity', 'nloc', 'token_count', 'name', 'long_name', 'start_line', 'end_line', 'full_parameters', 'filename', 'top_nesting_level', 'length', 'fan_in', 'fan_out', 'general_fan_out']:
                 setattr(self, 'lizard_'+att, getattr(self.lizard_method, att))
+            for att in ['cyclomatic_complexity', 'nloc', 'token_count', 'top_nesting_level', 'length', 'fan_in', 'fan_out', 'general_fan_out']:
+                self.lizard_values[att] = getattr(self.lizard_method, att)
         if analyze_source_lines:
             self.source_lines = SourceLine.get_source_lines(start_line, end_line, contents, halstead_lines, changed_indices, method_used_lines, method_decl.body, tokens)
             self.halstead = Halstead(list(map(lambda x: x.halstead_line, self.source_lines))).getValuesVector()
+            self.decls = SourceLine.get_decles_empty_dict()
+            for k in self.decls:
+                self.decls[k] = sum(list(map(lambda s: s.decls[k], self.source_lines)))
 
     def _is_changed(self, indices=None):
         if self.source_lines:

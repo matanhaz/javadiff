@@ -3,8 +3,10 @@ import gc
 import os
 try:
     from .SourceFile import SourceFile
+    from .methodData import SourceLine
 except:
     from SourceFile import SourceFile
+    from methodData import SourceLine
 
 
 class FileDiff(object):
@@ -23,10 +25,15 @@ class FileDiff(object):
             return
         before_contents = self.get_before_content_from_diff(diff, first_commit)
         after_contents = self.get_after_content_from_diff(diff, git_dir, second_commit)
-        before_indices, after_indices = self.get_changed_indices(before_contents, after_contents)
-        self.before_file = SourceFile(before_contents, diff.a_path, before_indices, analyze_source_lines=analyze_source_lines)
-        self.after_file = SourceFile(after_contents, diff.b_path, after_indices, analyze_source_lines=analyze_source_lines)
+        self.removed_indices, self.added_indices = self.get_changed_indices(before_contents, after_contents)
+        self.before_file = SourceFile(before_contents, diff.a_path, self.removed_indices, analyze_source_lines=analyze_source_lines)
+        self.after_file = SourceFile(after_contents, diff.b_path, self.added_indices, analyze_source_lines=analyze_source_lines)
         self.modified_names = self.after_file.modified_names
+        if analyze_source_lines:
+            self.decls = SourceLine.get_decles_empty_dict()
+            for k in self.decls:
+                self.decls[k] = self.after_file.decls[k] - self.before_file.decls[k]
+
 
     def get_after_content_from_diff(self, diff, git_dir, second_commit):
         after_contents = [b'']
@@ -78,17 +85,33 @@ class FileDiff(object):
         def get_indices_by_prefix(lines, prefix):
             return list(map(lambda x: x[0], filter(lambda x: x[1].startswith(prefix), enumerate(lines))))
 
-        diff = list(difflib.ndiff(before_contents, after_contents))
+        diff = list(difflib.ndiff(before_contents, after_contents#))
+                                  ,linejunk=lambda l: difflib.IS_LINE_JUNK(l) or l.strip().startswith('//') or l.strip().startswith('*') or l.strip().startswith('/*') or l.strip().startswith('*/'),
+                                  charjunk=lambda c: difflib.IS_CHARACTER_JUNK(c) or c.isspace()))
 
-        diff_before_lines = get_lines_by_prefixes(diff, FileDiff.BEFORE_PREFIXES)
-        assert list(map(lambda x: x[2:], diff_before_lines)) == before_contents
-        before_indices = get_indices_by_prefix(diff_before_lines, FileDiff.REMOVED)
+        before_ind = -1
+        after_ind = -1
+        removed_indices_ = []
+        added_indices_ = []
+        for line in diff:
+            if line.startswith(FileDiff.UNCHANGED):
+                before_ind += 1
+                after_ind += 1
+            elif line.startswith(FileDiff.REMOVED):
+                before_ind += 1
+                removed_indices_.append(before_ind)
+            elif line.startswith(FileDiff.ADDED):
+                after_ind += 1
+                added_indices_.append(after_ind)
+        # diff_before_lines = get_lines_by_prefixes(diff, FileDiff.BEFORE_PREFIXES)
+        # # assert list(map(lambda x: x[2:], diff_before_lines)) == before_contents
+        # removed_indices = get_indices_by_prefix(diff_before_lines, FileDiff.REMOVED)
+        #
+        # diff_after_lines = get_lines_by_prefixes(diff, FileDiff.AFTER_PREFIXES)
+        # # assert list(map(lambda x: x[2:], diff_after_lines)) == after_contents
+        # added_indices = get_indices_by_prefix(diff_after_lines, FileDiff.ADDED)
 
-        diff_after_lines = get_lines_by_prefixes(diff, FileDiff.AFTER_PREFIXES)
-        assert list(map(lambda x: x[2:], diff_after_lines)) == after_contents
-        after_indices = get_indices_by_prefix(diff_after_lines, FileDiff.ADDED)
-
-        return before_indices, after_indices
+        return removed_indices_, added_indices_
 
     def get_changed_methods(self):
         return self.after_file.get_changed_methods() + self.before_file.get_changed_methods()
