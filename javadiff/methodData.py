@@ -69,6 +69,7 @@ class SourceLine(object):
         indent_level = {}
         for l in lines:
             ans[l] = []
+            indentetions[l] = []
         for e in parsed_body:
             for path, x in e.filter(javalang.ast.Node):
                 # for x in list(filter(helper, map(getter, e2.filter()))):
@@ -86,12 +87,14 @@ class SourceLine(object):
         for line in indentetions:
             if indentetions[line]:
                 indent_level[line] = min(list(map(levels.get, indentetions[line])))
-        res = {}
+            else:
+                indent_level[line] = 0
+        decls = {}
         for l in ans:
-            res[l] = SourceLine.get_decles_empty_dict()
+            decls[l] = SourceLine.get_decles_empty_dict()
             for k, v in dict(Counter(map(lambda x: type(x).__name__, ans[l]))).items():
-                res[l][k] = v
-        return res, indent_level
+                decls[l][k] = v
+        return decls, indent_level
 
     @staticmethod
     def get_tokens_by_lines(tokens, lines):
