@@ -25,7 +25,7 @@ class SourceFile(object):
         try:
             f, path_to_lizard = tempfile.mkstemp()
             os.close(f)
-            with open(path_to_lizard, 'w') as f:
+            with open(path_to_lizard, 'w', encoding="utf-8") as f:
                 f.writelines(contents)
             self.lizard_analysis = lizard.analyze_file(path_to_lizard)
             self.lizard_values = {}
