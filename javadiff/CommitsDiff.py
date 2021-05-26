@@ -8,6 +8,7 @@ except:
 
 class CommitsDiff(object):
     def __init__(self, child, parent, analyze_source_lines=True):
+        self.child = child
         self.diffs = list(CommitsDiff.diffs(child, parent, analyze_source_lines=analyze_source_lines))
 
     @staticmethod
@@ -25,6 +26,14 @@ class CommitsDiff(object):
         for d in all_dicts:
             for k in d:
                 ans[k].extend(d[k])
+        return ans
+
+    def get_metrics(self):
+        ans = []
+        for f in self.diffs:
+            m = f.get_metrics(self.child.hexsha)
+            if m:
+                ans.append(m)
         return ans
 
 

@@ -31,9 +31,11 @@ class FileDiff(object):
         self.modified_names = self.after_file.modified_names
         if analyze_source_lines:
             self.decls = SourceLine.get_decles_empty_dict()
+            self.halstead = {}
             for k in self.decls:
                 self.decls[k] = self.after_file.decls[k] - self.before_file.decls[k]
-
+            for k in self.after_file.halstead:
+                self.halstead[k] = self.after_file.halstead[k] - self.before_file.halstead[k]
 
     def get_after_content_from_diff(self, diff, git_dir, second_commit):
         after_contents = [b'']
@@ -135,6 +137,28 @@ class FileDiff(object):
 
     def __repr__(self):
         return self.file_name
+
+    def get_metrics(self, commit=None):
+        ans = {'commit': commit, 'file_name': self.file_name}
+        if not self.is_ok:
+            return None
+        before = self.before_file.get_file_metrics()
+        after = self.after_file.get_file_metrics()
+        for prefix, d in (('parent_', before), ('current_', after)):
+            for k in d:
+                ans[prefix + k] = d[k]
+        # deltas
+        for k in self.decls:
+            ans['delta_' + k] = self.decls[k]
+        for k in self.halstead:
+            ans['delta_' + k] = self.halstead[k]
+        # churn
+        ans['added_lines+removed_lines'] = after['changed_lines'] + before['changed_lines']
+        ans['added_lines-removed_lines'] = after['changed_lines'] - before['changed_lines']
+        ans['used_added_lines+used_removed_lines'] = after['changed_used_lines'] + before['changed_used_lines']
+        ans['used_added_lines-used_removed_lines'] = after['changed_used_lines'] - before['changed_used_lines']
+        return ans
+
 
 
 class FormatPatchFileDiff(FileDiff):

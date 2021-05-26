@@ -4,12 +4,15 @@ import os
 import lizard
 import tempfile
 import traceback
+from functools import reduce
 try:
     from .commented_code_detector import CommentFilter
     from .methodData import MethodData, SourceLine
+    from .commented_code_detector import Halstead
 except:
     from methodData import MethodData, SourceLine
     from commented_code_detector import CommentFilter
+    from commented_code_detector import Halstead
 
 
 class SourceFile(object):
@@ -51,6 +54,7 @@ class SourceFile(object):
                 self.decls = SourceLine.get_decles_empty_dict()
                 for k in self.decls:
                     self.decls[k] = sum(list(map(lambda m: self.methods[m].decls[k], self.methods)))
+                self.halstead = Halstead(reduce(list.__add__, list(map(lambda m: list(map(lambda s: s.halstead_line, m.source_lines)), self.methods.values())), [])).getValuesVector()
         except Exception as e:
             traceback.print_exc()
             raise
@@ -109,5 +113,29 @@ class SourceFile(object):
                         self.contents[old_method.end_line:]
         self.methods = self.get_methods_by_javalang()
 
+    @staticmethod
+    def get_hunks_count(indices):
+        if len(indices) == 0:
+            return 0
+        elif len(indices) == 1:
+            return 1
+        hunks = 1
+        s = sorted(indices)
+        for i,j in zip(s, s[1:]):
+            if i + 1 != j:
+                hunks += 1
+        return hunks
+
     def __repr__(self):
         return self.file_name
+
+    def get_file_metrics(self):
+        d = {'changed_lines': len(self.changed_indices), 'used_lines': len(self.used_lines), 'changed_used_lines': len(self.used_changed_lines),
+              'methods_count': len(self.methods), 'lines_hunks': self.get_hunks_count(self.changed_indices), 'used_lines_hunks': self.get_hunks_count(self.used_changed_lines)}
+        for k in self.lizard_values:
+            d[k] = self.lizard_values[k]
+        for k in self.decls:
+            d[k] = self.decls[k]
+        for k in self.halstead:
+            d[k] = self.halstead[k]
+        return d
