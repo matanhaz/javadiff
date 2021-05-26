@@ -82,7 +82,7 @@ class SourceLine(object):
                         continue
                 cols.add(position.column)
                 indentetions.setdefault(position.line, []).append(position.column)
-                ans[position.line].append(x)
+                ans.setdefault(position.line, []).append(x)
         levels = dict(map(reversed, enumerate(sorted(cols))))
         for line in indentetions:
             if indentetions[line]:
