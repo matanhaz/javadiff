@@ -69,8 +69,6 @@ class SourceLine(object):
         indent_level = {}
         for l in lines:
             ans[l] = []
-            indentetions[l] = []
-            indent_level[l] = []
         for e in parsed_body:
             for path, x in e.filter(javalang.ast.Node):
                 # for x in list(filter(helper, map(getter, e2.filter()))):
@@ -82,7 +80,7 @@ class SourceLine(object):
                     else:
                         continue
                 cols.add(position.column)
-                indentetions[position.line].append(position.column)
+                indentetions.setdefault(position.line, [])append(position.column)
                 ans[position.line].append(x)
         levels = dict(map(reversed, enumerate(sorted(cols))))
         for line in indentetions:
