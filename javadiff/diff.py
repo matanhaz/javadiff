@@ -24,7 +24,10 @@ def get_commit_diff(git_path, child, parent=None, analyze_source_lines=True):
     if isinstance(child, str):
         child = repo.commit(child)
     if not parent:
-        parent = child.parents[0]
+        if child.parents:
+            parent = child.parents[0]
+    if not parent:
+        return None
     return CommitsDiff(child, parent, analyze_source_lines=analyze_source_lines)
 
 
