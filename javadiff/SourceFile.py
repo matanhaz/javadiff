@@ -1,6 +1,7 @@
 import operator
 import javalang
 import os
+import sys
 import lizard
 import tempfile
 import traceback
@@ -25,8 +26,12 @@ class SourceFile(object):
         try:
             f, path_to_lizard = tempfile.mkstemp()
             os.close(f)
-            with open(path_to_lizard, 'w', encoding="utf-8") as f:
-                f.writelines(contents)
+            if sys.version_info.major == 3:
+                with open(path_to_lizard, 'w', encoding="utf-8") as f:
+                    f.writelines(contents)
+            else:
+                with open(path_to_lizard, 'wb') as f:
+                    f.writelines(contents.encode("UTF-8"))
             self.lizard_analysis = lizard.analyze_file(path_to_lizard)
             self.lizard_values = {}
             for att in ['CCN', 'ND', 'average_cyclomatic_complexity', 'average_nloc', 'average_token_count', 'nloc', 'token_count']:
