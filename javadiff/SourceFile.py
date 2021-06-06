@@ -31,7 +31,7 @@ class SourceFile(object):
                     f.writelines(contents)
             else:
                 with open(path_to_lizard, 'wb') as f:
-                    f.writelines(contents.encode("UTF-8"))
+                    f.writelines(map(lambda x: x.encode("UTF-8"), contents))
             self.lizard_analysis = lizard.analyze_file(path_to_lizard)
             self.lizard_values = {}
             for att in ['CCN', 'ND', 'average_cyclomatic_complexity', 'average_nloc', 'average_token_count', 'nloc', 'token_count']:
