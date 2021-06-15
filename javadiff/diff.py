@@ -19,7 +19,7 @@ except:
 from functools import reduce
 
 
-def get_commit_diff(git_path, child, parent=None, analyze_source_lines=True):
+def get_commit_diff(git_path, child, parent=None, analyze_source_lines=True, analyze_diff=False):
     repo = git.Repo(git_path)
     if isinstance(child, str):
         child = repo.commit(child)
@@ -28,16 +28,16 @@ def get_commit_diff(git_path, child, parent=None, analyze_source_lines=True):
             parent = child.parents[0]
     if not parent:
         return None
-    return CommitsDiff(child, parent, analyze_source_lines=analyze_source_lines)
+    return CommitsDiff(child, parent, analyze_source_lines=analyze_source_lines, analyze_diff=analyze_diff)
 
 
-def get_commit_methods(git_path, child, parent=None, analyze_source_lines=True):
+def get_commit_methods(git_path, child, parent=None, analyze_source_lines=True, analyze_diff=False):
     repo = git.Repo(git_path)
     if isinstance(child, str):
         child = repo.commit(child)
     if not parent:
         parent = child.parents[0]
-    file_diffs =  CommitsDiff(child, parent, analyze_source_lines=analyze_source_lines).diffs
+    file_diffs =  CommitsDiff(child, parent, analyze_source_lines=analyze_source_lines, analyze_diff=analyze_diff).diffs
     methods = []
     for file_diff in file_diffs:
         gc.collect()
@@ -46,13 +46,13 @@ def get_commit_methods(git_path, child, parent=None, analyze_source_lines=True):
     return methods
 
 
-def get_changed_exists_methods(git_path, child, parent=None, analyze_source_lines=True):
+def get_changed_exists_methods(git_path, child, parent=None, analyze_source_lines=True, analyze_diff=False):
     repo = git.Repo(git_path)
     if isinstance(child, str):
         child = repo.commit(child)
     if not parent:
         parent = child.parents[0]
-    return get_changed_exists_methods_from_file_diffs(CommitsDiff(child, parent, analyze_source_lines=analyze_source_lines).diffs)
+    return get_changed_exists_methods_from_file_diffs(CommitsDiff(child, parent, analyze_source_lines=analyze_source_lines, analyze_diff=analyze_diff).diffs)
 
 
 def get_modified_functions(git_path):

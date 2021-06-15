@@ -17,22 +17,23 @@ except:
 
 
 class SourceFile(object):
-    def __init__(self, contents, file_name, indices=(), analyze_source_lines=True):
+    def __init__(self, contents, file_name, indices=(), analyze_source_lines=True, delete_source=True):
         self.contents = contents
         self.changed_indices = indices
         self.file_name = file_name
         self.lizard_analysis = None
         self.methods = dict()
+        self.path_to_source = None
         try:
-            f, path_to_lizard = tempfile.mkstemp()
+            f, self.path_to_source = tempfile.mkstemp()
             os.close(f)
             if sys.version_info.major == 3:
-                with open(path_to_lizard, 'w', encoding="utf-8") as f:
+                with open(self.path_to_source, 'w', encoding="utf-8") as f:
                     f.writelines(contents)
             else:
-                with open(path_to_lizard, 'wb') as f:
+                with open(self.path_to_source, 'wb') as f:
                     f.writelines(contents.encode("UTF-8"))
-            self.lizard_analysis = lizard.analyze_file(path_to_lizard)
+            self.lizard_analysis = lizard.analyze_file(self.path_to_source)
             self.lizard_values = {}
             for att in ['CCN', 'ND', 'average_cyclomatic_complexity', 'average_nloc', 'average_token_count', 'nloc', 'token_count']:
                 try:
@@ -41,7 +42,8 @@ class SourceFile(object):
                 except:
                     setattr(self, 'lizard_' + att, None)
                     self.lizard_values[att] = 0
-            os.remove(path_to_lizard)
+            if delete_source:
+                self.remove_source()
             tokens = list(javalang.tokenizer.tokenize("".join(self.contents)))
             parser = javalang.parser.Parser(tokens)
             parsed_data = parser.parse()
@@ -63,6 +65,9 @@ class SourceFile(object):
         except Exception as e:
             traceback.print_exc()
             raise
+
+    def remove_source(self):
+        os.remove(self.path_to_source)
 
     def get_methods_by_javalang(self, tokens, parsed_data, analyze_source_lines=True):
         def get_method_end_position(method, seperators):
