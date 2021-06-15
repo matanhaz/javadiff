@@ -30,8 +30,8 @@ class FileDiff(object):
         before_contents = self.get_before_content_from_diff(diff, first_commit)
         after_contents = self.get_after_content_from_diff(diff, git_dir, second_commit)
         self.removed_indices, self.added_indices = self.get_changed_indices(before_contents, after_contents)
-        self.before_file = SourceFile(before_contents, diff.a_path, self.removed_indices, analyze_source_lines=analyze_source_lines, delete_source=analyze_diff)
-        self.after_file = SourceFile(after_contents, diff.b_path, self.added_indices, analyze_source_lines=analyze_source_lines, delete_source=analyze_diff)
+        self.before_file = SourceFile(before_contents, diff.a_path, self.removed_indices, analyze_source_lines=analyze_source_lines, delete_source=not analyze_diff)
+        self.after_file = SourceFile(after_contents, diff.b_path, self.added_indices, analyze_source_lines=analyze_source_lines, delete_source=not analyze_diff)
         self.modified_names = self.after_file.modified_names
         if analyze_source_lines:
             self.decls = SourceLine.get_decles_empty_dict()
