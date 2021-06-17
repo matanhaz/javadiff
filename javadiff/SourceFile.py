@@ -25,7 +25,7 @@ class SourceFile(object):
         self.methods = dict()
         self.path_to_source = None
         try:
-            f, self.path_to_source = tempfile.mkstemp()
+            f, self.path_to_source = tempfile.mkstemp(suffix='.java')
             os.close(f)
             if sys.version_info.major == 3:
                 with open(self.path_to_source, 'w', encoding="utf-8") as f:
