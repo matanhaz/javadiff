@@ -33,16 +33,16 @@ class FileDiff(object):
         self.before_file = SourceFile(before_contents, diff.a_path, self.removed_indices, analyze_source_lines=analyze_source_lines, delete_source=not analyze_diff)
         self.after_file = SourceFile(after_contents, diff.b_path, self.added_indices, analyze_source_lines=analyze_source_lines, delete_source=not analyze_diff)
         self.modified_names = self.after_file.modified_names
+        self.ast_metrics = {}
+        self.halstead = {}
+        self.decls = SourceLine.get_decles_empty_dict()
         if analyze_source_lines:
-            self.decls = SourceLine.get_decles_empty_dict()
-            self.halstead = {}
             for k in self.decls:
                 self.decls[k] = self.after_file.decls[k] - self.before_file.decls[k]
             for k in self.after_file.halstead:
                 self.halstead[k] = self.after_file.halstead[k] - self.before_file.halstead[k]
         if analyze_diff:
             path_to_out_json = None
-            self.ast_metrics = {}
             try:
                 f, path_to_out_json = tempfile.mkstemp()
                 os.close(f)

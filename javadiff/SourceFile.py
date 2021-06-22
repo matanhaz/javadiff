@@ -99,7 +99,7 @@ class SourceFile(object):
                     continue
                 method_start_position = method.position
                 method_end_position = get_method_end_position(method, seperators)
-                method_used_lines = list(filter(lambda line: method_start_position.line <= line <= method_end_position.line, used_lines))
+                method_used_lines = list(filter(lambda line: method_start_position.line - 1 <= line <= method_end_position.line, used_lines))
                 parameters = list(map(lambda parameter: parameter.type.name + ('[]' if parameter.type.children[1] else ''), method.parameters))
                 lizard_method = list(filter(lambda f: f.start_line == method_start_position.line, self.lizard_analysis.function_list))
                 if lizard_method:
@@ -107,7 +107,7 @@ class SourceFile(object):
                 else:
                     lizard_method = None
                 method_data = MethodData(".".join([self.package_name, class_name, method.name]),
-                                         method_start_position.line, method_end_position.line,
+                                         method_start_position.line - 1, method_end_position.line,
                                          self.contents, halstead_lines, self.changed_indices, method_used_lines, parameters, self.file_name, method, tokens, analyze_source_lines=analyze_source_lines, lizard_method=lizard_method)
                 methods_dict[method_data.id] = method_data
         return methods_dict, used_lines
@@ -141,7 +141,10 @@ class SourceFile(object):
 
     def get_file_metrics(self):
         d = {'changed_lines': len(self.changed_indices), 'used_lines': len(self.used_lines), 'changed_used_lines': len(self.used_changed_lines),
-              'methods_count': len(self.methods), 'lines_hunks': self.get_hunks_count(self.changed_indices), 'used_lines_hunks': self.get_hunks_count(self.used_changed_lines)}
+             'methods_used_lines': sum(list(map(lambda m: len(m.used_lines), self.methods.values()))),
+             'methods_changed_used_lines': sum(list(map(lambda m: len(m.used_changed_lines), self.methods.values()))),
+              'methods_count': len(self.methods), 'lines_hunks': self.get_hunks_count(self.changed_indices),
+             'used_lines_hunks': self.get_hunks_count(self.used_changed_lines)}
         for k in self.lizard_values:
             d[k] = self.lizard_values[k]
         for k in self.decls:

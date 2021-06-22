@@ -25,6 +25,7 @@ class SourceLine(object):
         self.is_changed = is_changed
         self.ordinal = ordinal
         self.decls = decls
+        self.decls_count = sum(self.decls.values())
         self.tokens = tokens
         self.indent_level = indent_level
 
@@ -144,10 +145,13 @@ class MethodData(object):
                 self.lizard_values[att] = getattr(self.lizard_method, att)
         if analyze_source_lines:
             self.source_lines = SourceLine.get_source_lines(start_line, end_line, contents, halstead_lines, changed_indices, method_used_lines, method_decl.body, tokens)
+            self.used_lines = list(map(lambda s: s.line_number, self.source_lines))
+            self.used_changed_lines = list(map(lambda s: s.line_number, filter(lambda s: s.is_changed, self.source_lines)))
             self.halstead = Halstead(list(map(lambda x: x.halstead_line, self.source_lines))).getValuesVector()
             self.decls = SourceLine.get_decles_empty_dict()
             for k in self.decls:
                 self.decls[k] = sum(list(map(lambda s: s.decls[k], self.source_lines)))
+            self.decls_count = sum(self.decls.values())
 
     def _is_changed(self, indices=None):
         if self.source_lines:
