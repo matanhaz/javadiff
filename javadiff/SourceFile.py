@@ -3,9 +3,13 @@ import javalang
 import os
 import sys
 import lizard
+import shutil
 import tempfile
 import traceback
+import pandas as pd
+from collections import Counter
 from functools import reduce
+from subprocess import run
 try:
     from .commented_code_detector import CommentFilter
     from .methodData import MethodData, SourceLine
@@ -19,15 +23,17 @@ except:
 
 
 class SourceFile(object):
-    def __init__(self, contents, file_name, indices=(), analyze_source_lines=True, delete_source=True):
+    def __init__(self, contents, file_name, indices=(), analyze_source_lines=True, delete_source=True, analyze_diff=False):
         self.contents = contents
         self.changed_indices = indices
         self.file_name = file_name
         self.lizard_analysis = None
         self.methods = dict()
-        self.path_to_source = None
+        self.osa_metrics = {}
+        self.path_to_source, self.path_to_dir_source = None, None
         try:
-            f, self.path_to_source = tempfile.mkstemp(suffix='.java')
+            self.path_to_dir_source = tempfile.mkdtemp()
+            f, self.path_to_source = tempfile.mkstemp(suffix='.java', dir=self.path_to_dir_source)
             os.close(f)
             if sys.version_info.major == 3:
                 with open(self.path_to_source, 'w', encoding="utf-8") as f:
@@ -44,6 +50,8 @@ class SourceFile(object):
                 except:
                     setattr(self, 'lizard_' + att, None)
                     self.lizard_values[att] = 0
+            if analyze_diff:
+                self.osa_metrics = self.run_open_analyzer()
             if delete_source:
                 self.remove_source()
             tokens = list(javalang.tokenizer.tokenize("".join(self.contents)))
@@ -69,7 +77,10 @@ class SourceFile(object):
             raise
 
     def remove_source(self):
-        os.remove(self.path_to_source)
+        if self.path_to_dir_source:
+            shutil.rmtree(self.path_to_dir_source)
+        else:
+            os.remove(self.path_to_source)
 
     def get_methods_by_javalang(self, tokens, parsed_data, analyze_source_lines=True):
         def get_method_end_position(method, seperators):
@@ -117,6 +128,68 @@ class SourceFile(object):
     def get_changed_methods(self):
         return list(filter(lambda method: method.changed, self.methods.values()))
 
+    def run_open_analyzer(self):
+        results_dir = tempfile.mkdtemp(prefix='results_osa_')
+        name_project = os.path.basename(self.path_to_dir_source)
+        run([os.path.abspath(os.path.join(os.path.dirname(__file__), r'..\externals\java\OpenStaticAnalyzerJava.exe')),
+             '-resultsDir=' + results_dir, '-projectName=' +
+             name_project, '-projectBaseDir=' + self.path_to_dir_source, self.path_to_source])
+
+        directory_path = os.path.join(results_dir, name_project, "java")
+        directory_path = os.path.abspath(os.path.join(directory_path, os.listdir(directory_path)[0], name_project))
+
+        STATIC = ['PDA', 'LOC', 'CLOC', 'PUA', 'McCC', 'LLOC', 'LDC', 'NOS', 'MISM', 'CCL', 'TNOS', 'TLLOC',
+                  'NLE', 'CI', 'HPL', 'MI', 'HPV', 'CD', 'NOI', 'NUMPAR', 'MISEI', 'CC', 'LLDC', 'NII', 'CCO',
+                  'CLC', 'TCD',
+                  'NL', 'TLOC', 'CLLC', 'TCLOC', 'MIMS', 'HDIF', 'DLOC', 'NLM', 'DIT', 'NPA', 'TNLPM',
+                  'TNLA', 'NLA', 'AD', 'TNLPA', 'NM', 'TNG', 'NLPM', 'TNM', 'NOC', 'NOD', 'NOP', 'NLS', 'NG',
+                  'TNLG',
+                  'CBOI',
+                  'RFC', 'NLG', 'TNLS', 'TNA', 'NLPA', 'NOA', 'WMC', 'NPM', 'TNPM', 'TNS', 'NA', 'LCOM5', 'NS',
+                  'CBO',
+                  'TNLM',
+                  'TNPA']
+        x = pd.read_csv(directory_path + "-Class.csv", low_memory=False)
+        x_sum = x.agg({i: 'sum' for i in STATIC if i in list(x.columns)})
+        y = pd.read_csv(directory_path + "-Method.csv", low_memory=False)
+        y_sum = y.agg({i: 'sum' for i in STATIC if i not in list(x.columns)})
+        static_results = pd.concat([x_sum, y_sum], axis=0).to_dict()
+
+        # region PMD_RULES
+        PMD_RULES = ['PMD_ABSALIL', 'PMD_ADLIBDC', 'PMD_AMUO', 'PMD_ATG', 'PMD_AUHCIP', 'PMD_AUOV', 'PMD_BII', 'PMD_BI',
+                     'PMD_BNC', 'PMD_CRS', 'PMD_CSR', 'PMD_CCEWTA', 'PMD_CIS', 'PMD_DCTR', 'PMD_DUFTFLI', 'PMD_DCL',
+                     'PMD_ECB', 'PMD_EFB', 'PMD_EIS', 'PMD_EmSB', 'PMD_ESNIL', 'PMD_ESI', 'PMD_ESS', 'PMD_ESB',
+                     'PMD_ETB', 'PMD_EWS', 'PMD_EO', 'PMD_FLSBWL', 'PMD_JI', 'PMD_MNC', 'PMD_OBEAH', 'PMD_RFFB',
+                     'PMD_UIS', 'PMD_UCT', 'PMD_UNCIE', 'PMD_UOOI', 'PMD_UOM', 'PMD_FLMUB', 'PMD_IESMUB', 'PMD_ISMUB',
+                     'PMD_WLMUB', 'PMD_CTCNSE', 'PMD_PCI', 'PMD_AIO', 'PMD_AAA', 'PMD_APMP', 'PMD_AUNC', 'PMD_DP',
+                     'PMD_DNCGCE', 'PMD_DIS', 'PMD_ODPL', 'PMD_SOE', 'PMD_UC', 'PMD_ACWAM', 'PMD_AbCWAM', 'PMD_ATNFS',
+                     'PMD_ACI', 'PMD_AICICC', 'PMD_APFIFC', 'PMD_APMIFCNE', 'PMD_ARP', 'PMD_ASAML', 'PMD_BC',
+                     'PMD_CWOPCSBF', 'PMD_ClR', 'PMD_CCOM', 'PMD_DLNLISS', 'PMD_EMIACSBA', 'PMD_EN', 'PMD_FDSBASOC',
+                     'PMD_FFCBS', 'PMD_IO', 'PMD_IF', 'PMD_ITGC', 'PMD_LI', 'PMD_MBIS', 'PMD_MSMINIC', 'PMD_NCLISS',
+                     'PMD_NSI', 'PMD_NTSS', 'PMD_OTAC', 'PMD_PLFICIC', 'PMD_PLFIC', 'PMD_PST', 'PMD_REARTN',
+                     'PMD_SDFNL', 'PMD_SBE', 'PMD_SBR', 'PMD_SC', 'PMD_SF', 'PMD_SSSHD', 'PMD_TFBFASS', 'PMD_UEC',
+                     'PMD_UEM', 'PMD_ULBR', 'PMD_USDF', 'PMD_UCIE', 'PMD_ULWCC', 'PMD_UNAION', 'PMD_UV', 'PMD_ACF',
+                     'PMD_EF', 'PMD_FDNCSF', 'PMD_FOCSF', 'PMD_FO', 'PMD_FSBP', 'PMD_DIJL', 'PMD_DI', 'PMD_IFSP',
+                     'PMD_TMSI', 'PMD_UFQN', 'PMD_DNCSE', 'PMD_LHNC', 'PMD_LISNC', 'PMD_MDBASBNC', 'PMD_RINC',
+                     'PMD_RSINC', 'PMD_SEJBFSBF', 'PMD_JUASIM', 'PMD_JUS', 'PMD_JUSS', 'PMD_JUTCTMA', 'PMD_JUTSIA',
+                     'PMD_SBA', 'PMD_TCWTC', 'PMD_UBA', 'PMD_UAEIOAT', 'PMD_UANIOAT', 'PMD_UASIOAT', 'PMD_UATIOAE',
+                     'PMD_GDL', 'PMD_GLS', 'PMD_PL', 'PMD_UCEL', 'PMD_APST', 'PMD_GLSJU', 'PMD_LINSF', 'PMD_MTOL',
+                     'PMD_SP', 'PMD_MSVUID', 'PMD_ADS', 'PMD_AFNMMN', 'PMD_AFNMTN', 'PMD_BGMN', 'PMD_CNC', 'PMD_GN',
+                     'PMD_MeNC', 'PMD_MWSNAEC', 'PMD_NP', 'PMD_PC', 'PMD_SCN', 'PMD_SMN', 'PMD_SCFN', 'PMD_SEMN',
+                     'PMD_SHMN', 'PMD_VNC', 'PMD_AES', 'PMD_AAL', 'PMD_RFI', 'PMD_UWOC', 'PMD_UALIOV', 'PMD_UAAL',
+                     'PMD_USBFSA', 'PMD_AISD', 'PMD_MRIA', 'PMD_ACGE', 'PMD_ACNPE', 'PMD_ACT', 'PMD_ALEI', 'PMD_ARE',
+                     'PMD_ATNIOSE', 'PMD_ATNPE', 'PMD_ATRET', 'PMD_DNEJLE', 'PMD_DNTEIF', 'PMD_EAFC', 'PMD_ADL',
+                     'PMD_ASBF', 'PMD_CASR', 'PMD_CLA', 'PMD_ISB', 'PMD_SBIWC', 'PMD_StI', 'PMD_STS', 'PMD_UCC',
+                     'PMD_UETCS', 'PMD_ClMMIC', 'PMD_LoC', 'PMD_SiDTE', 'PMD_UnI', 'PMD_ULV', 'PMD_UPF', 'PMD_UPM']
+
+        # endregion PMD_RULES
+        pmd_results = dict.fromkeys(PMD_RULES, 0)
+        if os.path.getsize(directory_path + "-PMD.txt") != 0:
+            pmd = pd.read_csv(directory_path + "-PMD.txt", low_memory=False, delimiter=":", header=None)
+            pmd_results.update(Counter(list(map(str.strip, pmd.T.loc[2].to_list()))))
+        shutil.rmtree(results_dir)
+        return dict(list(static_results.items()) + list(pmd_results.items()))
+
     def replace_method(self, method_data):
         assert method_data.method_name in self.methods
         old_method = self.methods[method_data.method_name]
@@ -147,10 +220,8 @@ class SourceFile(object):
              'methods_changed_used_lines': sum(list(map(lambda m: len(m.used_changed_lines), self.methods.values()))),
               'methods_count': len(self.methods), 'lines_hunks': self.get_hunks_count(self.changed_indices),
              'used_lines_hunks': self.get_hunks_count(self.used_changed_lines)}
-        for k in self.lizard_values:
-            d[k] = self.lizard_values[k]
-        for k in self.decls:
-            d[k] = self.decls[k]
-        for k in self.halstead:
-            d[k] = self.halstead[k]
+        d.update(self.lizard_values)
+        d.update(self.osa_metrics)
+        d.update(self.decls)
+        d.update(self.halstead)
         return d

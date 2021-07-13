@@ -2,7 +2,12 @@ import difflib
 import gc
 import os
 import tempfile
+import shutil
+import ntpath
+import pandas as pd
 from subprocess import run
+from collections import Counter
+
 try:
     from .SourceFile import SourceFile
     from .methodData import SourceLine
@@ -23,7 +28,8 @@ class FileDiff(object):
     BEFORE_PREFIXES = [REMOVED, UNCHANGED]
     AFTER_PREFIXES = [ADDED, UNCHANGED]
 
-    def __init__(self, diff, commit_sha, first_commit=None, second_commit=None, git_dir=None, analyze_source_lines=True, analyze_diff=False):
+    def __init__(self, diff, commit_sha, first_commit=None, second_commit=None, git_dir=None, analyze_source_lines=True,
+                 analyze_diff=False):
         self.file_name = diff.b_path
         self.commit_sha = commit_sha
         self.is_ok = self.file_name.endswith(".java")
@@ -32,11 +38,14 @@ class FileDiff(object):
         before_contents = self.get_before_content_from_diff(diff, first_commit)
         after_contents = self.get_after_content_from_diff(diff, git_dir, second_commit)
         self.removed_indices, self.added_indices = self.get_changed_indices(before_contents, after_contents)
-        self.before_file = SourceFile(before_contents, diff.a_path, self.removed_indices, analyze_source_lines=analyze_source_lines, delete_source=not analyze_diff)
-        self.after_file = SourceFile(after_contents, diff.b_path, self.added_indices, analyze_source_lines=analyze_source_lines, delete_source=not analyze_diff)
+        self.before_file = SourceFile(before_contents, diff.a_path, self.removed_indices,
+                                      analyze_source_lines=analyze_source_lines, delete_source=not analyze_diff, analyze_diff=analyze_diff)
+        self.after_file = SourceFile(after_contents, diff.b_path, self.added_indices,
+                                     analyze_source_lines=analyze_source_lines, delete_source=not analyze_diff, analyze_diff=analyze_diff)
         self.modified_names = self.after_file.modified_names
         self.ast_metrics = {}
         self.halstead = {}
+        self.osa_metrics = {}
         self.decls = SourceLine.get_decles_empty_dict()
         if analyze_source_lines:
             for k in self.decls:
@@ -53,6 +62,9 @@ class FileDiff(object):
                 for k, v in AstDiff.load(path_to_out_json).items():
                     if k != 'operations':
                         self.ast_metrics[k] = v
+
+                for k in self.after_file.osa_metrics:
+                    self.osa_metrics[k] = self.after_file.osa_metrics[k] - self.before_file.osa_metrics[k]
             except:
                 pass
             finally:
@@ -61,11 +73,11 @@ class FileDiff(object):
                 self.before_file.remove_source()
                 self.after_file.remove_source()
 
-
     def get_after_content_from_diff(self, diff, git_dir, second_commit):
         after_contents = [b'']
         if diff.deleted_file:
             assert diff.b_blob is None
+            after_contents = []
         else:
             try:
                 after_contents = diff.b_blob.data_stream.stream.readlines()
@@ -87,6 +99,7 @@ class FileDiff(object):
         before_contents = [b'']
         if diff.new_file:
             assert diff.a_blob is None
+            before_contents = []
         else:
             try:
                 before_contents = diff.a_blob.data_stream.stream.readlines()
@@ -103,7 +116,6 @@ class FileDiff(object):
     def is_java_file(self):
         return self.is_ok
 
-
     @staticmethod
     def get_changed_indices(before_contents, after_contents):
         def get_lines_by_prefixes(lines, prefixes):
@@ -112,8 +124,13 @@ class FileDiff(object):
         def get_indices_by_prefix(lines, prefix):
             return list(map(lambda x: x[0], filter(lambda x: x[1].startswith(prefix), enumerate(lines))))
 
-        diff = list(difflib.ndiff(before_contents, after_contents#))
-                                  ,linejunk=lambda l: difflib.IS_LINE_JUNK(l) or l.strip().startswith('//') or l.strip().startswith('*') or l.strip().startswith('/*') or l.strip().startswith('*/'),
+        def comment(line, char_remove):
+            line = line.replace(char_remove, "")
+            return (line.strip().startswith('//') or line.strip().startswith('*') or line.strip().startswith(
+                '/*') or line.strip().startswith('*/') or line.strip() == "")
+
+        diff = list(difflib.ndiff(before_contents, after_contents,  # ))
+                                  # ,linejunk=lambda l: difflib.IS_LINE_JUNK(l) or l.strip().startswith('//') or l.strip().startswith('*') or l.strip().startswith('/*') or l.strip().startswith('*/'),
                                   charjunk=lambda c: difflib.IS_CHARACTER_JUNK(c) or c.isspace()))
 
         before_ind = -1
@@ -126,10 +143,13 @@ class FileDiff(object):
                 after_ind += 1
             elif line.startswith(FileDiff.REMOVED):
                 before_ind += 1
-                removed_indices_.append(before_ind)
+                if not comment(line, FileDiff.REMOVED):
+                    removed_indices_.append(before_ind)
             elif line.startswith(FileDiff.ADDED):
                 after_ind += 1
-                added_indices_.append(after_ind)
+                if not comment(line, FileDiff.ADDED):
+                    added_indices_.append(after_ind)
+
         # diff_before_lines = get_lines_by_prefixes(diff, FileDiff.BEFORE_PREFIXES)
         # # assert list(map(lambda x: x[2:], diff_before_lines)) == before_contents
         # removed_indices = get_indices_by_prefix(diff_before_lines, FileDiff.REMOVED)
@@ -179,13 +199,14 @@ class FileDiff(object):
             ans['delta_' + k] = self.halstead[k]
         for k in self.ast_metrics:
             ans['ast_diff_' + k] = self.ast_metrics[k]
+        for k in self.osa_metrics:
+            ans['delta_' + k] = self.osa_metrics[k]
         # churn
         ans['added_lines+removed_lines'] = after['changed_lines'] + before['changed_lines']
         ans['added_lines-removed_lines'] = after['changed_lines'] - before['changed_lines']
         ans['used_added_lines+used_removed_lines'] = after['changed_used_lines'] + before['changed_used_lines']
         ans['used_added_lines-used_removed_lines'] = after['changed_used_lines'] - before['changed_used_lines']
         return ans
-
 
 
 class FormatPatchFileDiff(FileDiff):
