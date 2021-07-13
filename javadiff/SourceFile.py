@@ -181,9 +181,10 @@ class SourceFile(object):
                      'PMD_UETCS', 'PMD_ClMMIC', 'PMD_LoC', 'PMD_SiDTE', 'PMD_UnI', 'PMD_ULV', 'PMD_UPF', 'PMD_UPM']
 
         # endregion PMD_RULES
-        pmd = pd.read_csv(directory_path + "-PMD.txt", low_memory=False, delimiter=":", header=None)
         pmd_results = dict.fromkeys(PMD_RULES, 0)
-        pmd_results.update(Counter(list(map(str.strip, pmd.T.loc[2].to_list()))))
+        if os.path.getsize(directory_path + "-PMD.txt") != 0:
+            pmd = pd.read_csv(directory_path + "-PMD.txt", low_memory=False, delimiter=":", header=None)
+            pmd_results.update(Counter(list(map(str.strip, pmd.T.loc[2].to_list()))))
         shutil.rmtree(results_dir)
         return dict(list(static_results.items()) + list(pmd_results.items()))
 
