@@ -12,10 +12,12 @@ try:
     from .SourceFile import SourceFile
     from .methodData import SourceLine
     from .ast_diff_parser import AstDiff
+    from .utils import get_java_exe_by_version
 except:
     from SourceFile import SourceFile
     from methodData import SourceLine
     from ast_diff_parser import AstDiff
+    from utils import get_java_exe_by_version
 
 
 class FileDiff(object):
@@ -55,7 +57,7 @@ class FileDiff(object):
             try:
                 f, path_to_out_json = tempfile.mkstemp()
                 os.close(f)
-                run(['java', '-cp', os.path.abspath(os.path.join(os.path.dirname(__file__), r'..\externals\gumtree-spoon-ast-diff-SNAPSHOT-jar-with-dependencies.jar')), 'gumtree.spoon.AstComparator', self.before_file.path_to_source,
+                run([get_java_exe_by_version(11), '-cp', os.path.abspath(os.path.join(os.path.dirname(__file__), r'..\externals\gumtree-spoon-ast-diff-SNAPSHOT-jar-with-dependencies.jar')), 'gumtree.spoon.AstComparator', self.before_file.path_to_source,
                 self.after_file.path_to_source, path_to_out_json])
                 for k, v in AstDiff.load(path_to_out_json).items():
                     if k != 'operations':

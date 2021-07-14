@@ -14,10 +14,12 @@ try:
     from .commented_code_detector import CommentFilter
     from .methodData import MethodData, SourceLine
     from .commented_code_detector import Halstead
+    from .utils import get_java_exe_by_version
 except:
     from methodData import MethodData, SourceLine
     from commented_code_detector import CommentFilter
     from commented_code_detector import Halstead
+    from utils import get_java_exe_by_version
 
 
 class SourceFile(object):
