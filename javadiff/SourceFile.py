@@ -178,7 +178,8 @@ class SourceFile(object):
                      'PMD_USBFSA', 'PMD_AISD', 'PMD_MRIA', 'PMD_ACGE', 'PMD_ACNPE', 'PMD_ACT', 'PMD_ALEI', 'PMD_ARE',
                      'PMD_ATNIOSE', 'PMD_ATNPE', 'PMD_ATRET', 'PMD_DNEJLE', 'PMD_DNTEIF', 'PMD_EAFC', 'PMD_ADL',
                      'PMD_ASBF', 'PMD_CASR', 'PMD_CLA', 'PMD_ISB', 'PMD_SBIWC', 'PMD_StI', 'PMD_STS', 'PMD_UCC',
-                     'PMD_UETCS', 'PMD_ClMMIC', 'PMD_LoC', 'PMD_SiDTE', 'PMD_UnI', 'PMD_ULV', 'PMD_UPF', 'PMD_UPM']
+                     'PMD_UETCS', 'PMD_ClMMIC', 'PMD_LoC', 'PMD_SiDTE', 'PMD_UnI', 'PMD_ULV', 'PMD_UPF', 'PMD_UPM',
+                     'file_system_sum_WD', 'author_delta_sum_WD', 'system_WD']
 
         # endregion PMD_RULES
         pmd_results = dict.fromkeys(PMD_RULES, 0)
