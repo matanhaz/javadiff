@@ -186,8 +186,11 @@ class SourceFile(object):
         # endregion PMD_RULES
         pmd_results = dict.fromkeys(PMD_RULES, 0)
         if os.path.getsize(directory_path + "-PMD.txt") != 0:
+
             pmd = pd.read_csv(directory_path + "-PMD.txt", low_memory=False, delimiter=":", header=None)
             pmd_results.update(Counter(list(map(str.strip, pmd.T.loc[2].to_list()))))
+            print("for debug action - PMD file exists")
+            print({key:pmd_results[key] for key in pmd_results if pmd_results[key] != 0})
         shutil.rmtree(results_dir)
         return dict(list(static_results.items()) + list(pmd_results.items()))
 
