@@ -10,6 +10,7 @@ import pandas as pd
 from collections import Counter
 from functools import reduce
 from subprocess import run
+
 try:
     from .commented_code_detector import CommentFilter
     from .methodData import MethodData, SourceLine
@@ -23,7 +24,8 @@ except:
 
 
 class SourceFile(object):
-    def __init__(self, contents, file_name, indices=(), analyze_source_lines=True, delete_source=True, analyze_diff=False):
+    def __init__(self, contents, file_name, indices=(), analyze_source_lines=True, delete_source=True,
+                 analyze_diff=False):
         self.contents = contents
         self.changed_indices = indices
         self.file_name = file_name
@@ -43,7 +45,8 @@ class SourceFile(object):
                     f.writelines(map(lambda x: x.encode("UTF-8"), contents))
             self.lizard_analysis = lizard.analyze_file(self.path_to_source)
             self.lizard_values = {}
-            for att in ['CCN', 'ND', 'average_cyclomatic_complexity', 'average_nloc', 'average_token_count', 'nloc', 'token_count']:
+            for att in ['CCN', 'ND', 'average_cyclomatic_complexity', 'average_nloc', 'average_token_count', 'nloc',
+                        'token_count']:
                 try:
                     setattr(self, 'lizard_' + att, getattr(self.lizard_analysis, att))
                     self.lizard_values[att] = getattr(self.lizard_analysis, att)
@@ -65,13 +68,16 @@ class SourceFile(object):
             else:
                 pass
             self.modified_names = list(map(lambda c: self.package_name + "." + c.name, classes))
-            self.methods, self.used_lines = self.get_methods_by_javalang(tokens, parsed_data, analyze_source_lines=analyze_source_lines)
+            self.methods, self.used_lines = self.get_methods_by_javalang(tokens, parsed_data,
+                                                                         analyze_source_lines=analyze_source_lines)
             self.used_changed_lines = set(self.changed_indices).intersection(self.used_lines)
             if analyze_source_lines:
                 self.decls = SourceLine.get_decles_empty_dict()
                 for k in self.decls:
                     self.decls[k] = sum(list(map(lambda m: self.methods[m].decls[k], self.methods)))
-                self.halstead = Halstead(reduce(list.__add__, list(map(lambda m: list(map(lambda s: s.halstead_line, m.source_lines)), self.methods.values())), [])).getValuesVector()
+                self.halstead = Halstead(reduce(list.__add__, list(
+                    map(lambda m: list(map(lambda s: s.halstead_line, m.source_lines)), self.methods.values())),
+                                                [])).getValuesVector()
         except Exception as e:
             traceback.print_exc()
             raise
@@ -85,7 +91,8 @@ class SourceFile(object):
     def get_methods_by_javalang(self, tokens, parsed_data, analyze_source_lines=True):
         def get_method_end_position(method, seperators):
             method_seperators = seperators[list(map(id, sorted(seperators + [method],
-                                                          key=lambda x: (x.position.line, x.position.column)))).index(
+                                                               key=lambda x: (
+                                                               x.position.line, x.position.column)))).index(
                 id(method)):]
             assert method_seperators[0].value == "{"
             counter = 1
@@ -98,30 +105,37 @@ class SourceFile(object):
                     return seperator.position
 
         halstead_lines = CommentFilter().filterComments(self.contents)[0]
-        used_lines = set(map(lambda t: t.position.line-1, tokens))
+        used_lines = set(map(lambda t: t.position.line - 1, tokens))
         seperators = list(filter(lambda token: isinstance(token, javalang.tokenizer.Separator) and token.value in "{}",
-                            tokens))
+                                 tokens))
         methods_dict = dict()
         for class_declaration in map(operator.itemgetter(1), parsed_data.filter(javalang.tree.ClassDeclaration)):
             class_name = class_declaration.name
             methods = list(map(operator.itemgetter(1), class_declaration.filter(javalang.tree.MethodDeclaration)))
-            constructors = list(map(operator.itemgetter(1), class_declaration.filter(javalang.tree.ConstructorDeclaration)))
+            constructors = list(
+                map(operator.itemgetter(1), class_declaration.filter(javalang.tree.ConstructorDeclaration)))
             for method in methods + constructors:
                 if not method.body:
                     # skip abstract methods
                     continue
                 method_start_position = method.position
                 method_end_position = get_method_end_position(method, seperators)
-                method_used_lines = list(filter(lambda line: method_start_position.line - 1 <= line <= method_end_position.line, used_lines))
-                parameters = list(map(lambda parameter: parameter.type.name + ('[]' if parameter.type.children[1] else ''), method.parameters))
-                lizard_method = list(filter(lambda f: f.start_line == method_start_position.line, self.lizard_analysis.function_list))
+                method_used_lines = list(
+                    filter(lambda line: method_start_position.line - 1 <= line <= method_end_position.line, used_lines))
+                parameters = list(
+                    map(lambda parameter: parameter.type.name + ('[]' if parameter.type.children[1] else ''),
+                        method.parameters))
+                lizard_method = list(
+                    filter(lambda f: f.start_line == method_start_position.line, self.lizard_analysis.function_list))
                 if lizard_method:
                     lizard_method = lizard_method[0]
                 else:
                     lizard_method = None
                 method_data = MethodData(".".join([self.package_name, class_name, method.name]),
                                          method_start_position.line - 1, method_end_position.line,
-                                         self.contents, halstead_lines, self.changed_indices, method_used_lines, parameters, self.file_name, method, tokens, analyze_source_lines=analyze_source_lines, lizard_method=lizard_method)
+                                         self.contents, halstead_lines, self.changed_indices, method_used_lines,
+                                         parameters, self.file_name, method, tokens,
+                                         analyze_source_lines=analyze_source_lines, lizard_method=lizard_method)
                 methods_dict[method_data.id] = method_data
         return methods_dict, used_lines
 
@@ -185,12 +199,14 @@ class SourceFile(object):
 
         # endregion PMD_RULES
         pmd_results = dict.fromkeys(PMD_RULES, 0)
-        if os.path.getsize(directory_path + "-PMD.txt") != 0:
-
+        print("before PMD")
+        if os.stat(directory_path + "-PMD.txt").st_size != 0:
+            # if os.path.getsize(directory_path + "-PMD.txt") != 0:
             pmd = pd.read_csv(directory_path + "-PMD.txt", low_memory=False, delimiter=":", header=None)
             pmd_results.update(Counter(list(map(str.strip, pmd.T.loc[2].to_list()))))
             print("for debug action - PMD file exists")
-            print({key:pmd_results[key] for key in pmd_results if pmd_results[key] != 0})
+            print({key: pmd_results[key] for key in pmd_results if pmd_results[key] != 0})
+        print("after PMD")
         shutil.rmtree(results_dir)
         return dict(list(static_results.items()) + list(pmd_results.items()))
 
@@ -210,7 +226,7 @@ class SourceFile(object):
             return 1
         hunks = 1
         s = sorted(indices)
-        for i,j in zip(s, s[1:]):
+        for i, j in zip(s, s[1:]):
             if i + 1 != j:
                 hunks += 1
         return hunks
@@ -219,10 +235,11 @@ class SourceFile(object):
         return self.file_name
 
     def get_file_metrics(self):
-        d = {'changed_lines': len(self.changed_indices), 'used_lines': len(self.used_lines), 'changed_used_lines': len(self.used_changed_lines),
+        d = {'changed_lines': len(self.changed_indices), 'used_lines': len(self.used_lines),
+             'changed_used_lines': len(self.used_changed_lines),
              'methods_used_lines': sum(list(map(lambda m: len(m.used_lines), self.methods.values()))),
              'methods_changed_used_lines': sum(list(map(lambda m: len(m.used_changed_lines), self.methods.values()))),
-              'methods_count': len(self.methods), 'lines_hunks': self.get_hunks_count(self.changed_indices),
+             'methods_count': len(self.methods), 'lines_hunks': self.get_hunks_count(self.changed_indices),
              'used_lines_hunks': self.get_hunks_count(self.used_changed_lines)}
         d.update(self.lizard_values)
         d.update(self.osa_metrics)
