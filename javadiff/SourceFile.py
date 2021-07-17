@@ -163,14 +163,11 @@ class SourceFile(object):
                   'CBO',
                   'TNLM',
                   'TNPA']
-        print("before 0 static")
         x = pd.read_csv(directory_path + "-Class.csv", low_memory=False)
         x_sum = x.agg({i: 'sum' for i in STATIC if i in list(x.columns)})
         y = pd.read_csv(directory_path + "-Method.csv", low_memory=False)
         y_sum = y.agg({i: 'sum' for i in STATIC if i not in list(x.columns)})
-        print("before 1 static")
         static_results = pd.concat([x_sum, y_sum], axis=0).to_dict()
-        print("after static")
         # region PMD_RULES
         PMD_RULES = ['PMD_ABSALIL', 'PMD_ADLIBDC', 'PMD_AMUO', 'PMD_ATG', 'PMD_AUHCIP', 'PMD_AUOV', 'PMD_BII', 'PMD_BI',
                      'PMD_BNC', 'PMD_CRS', 'PMD_CSR', 'PMD_CCEWTA', 'PMD_CIS', 'PMD_DCTR', 'PMD_DUFTFLI', 'PMD_DCL',
@@ -201,14 +198,14 @@ class SourceFile(object):
 
         # endregion PMD_RULES
         pmd_results = dict.fromkeys(PMD_RULES, 0)
-        print("before PMD")
-        if os.stat(directory_path + "-PMD.txt").st_size != 0:
-            # if os.path.getsize(directory_path + "-PMD.txt") != 0:
+        if os.path.getsize(directory_path + "-PMD.txt") != 0:
+            pmd_results = dict.fromkeys(PMD_RULES, -2)
             pmd = pd.read_csv(directory_path + "-PMD.txt", low_memory=False, delimiter=":", header=None)
+            pmd_results = dict.fromkeys(PMD_RULES, -3)
             pmd_results.update(Counter(list(map(str.strip, pmd.T.loc[2].to_list()))))
-            print("for debug action - PMD file exists")
-            print({key: pmd_results[key] for key in pmd_results if pmd_results[key] != 0})
-        print("after PMD")
+            pmd_results = dict.fromkeys(PMD_RULES, -4)
+        else:
+            pmd_results = dict.fromkeys(PMD_RULES, -1)
         shutil.rmtree(results_dir)
         return dict(list(static_results.items()) + list(pmd_results.items()))
 
