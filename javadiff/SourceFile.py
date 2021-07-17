@@ -197,13 +197,11 @@ class SourceFile(object):
                      'file_system_sum_WD', 'author_delta_sum_WD', 'system_WD']
 
         # endregion PMD_RULES
+
         pmd_results = dict.fromkeys(PMD_RULES, 0)
         if os.path.getsize(directory_path + "-PMD.txt") != 0:
-            pmd_results = dict.fromkeys(PMD_RULES, -2)
             pmd = pd.read_csv(directory_path + "-PMD.txt", low_memory=False, delimiter=":", header=None)
-            pmd_results = dict.fromkeys(PMD_RULES, -3)
             pmd_results.update(Counter(list(map(str.strip, pmd.T.loc[2].to_list()))))
-            pmd_results = dict.fromkeys(PMD_RULES, -4)
         else:
             pmd_results = dict.fromkeys(PMD_RULES, -1)
         shutil.rmtree(results_dir)
