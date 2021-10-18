@@ -61,6 +61,12 @@ def get_modified_functions(git_path):
     return get_changed_methods_from_file_diffs(map(lambda d: FileDiff(d, repo.head.commit.hexsha, git_dir=git_path), diffs))
 
 
+def get_modified_exists_functions(git_path):
+    repo = git.Repo(git_path)
+    diffs = repo.head.commit.tree.diff(None, None, True, ignore_blank_lines=True, ignore_space_at_eol=True)
+    return get_changed_exists_methods_from_file_diffs(map(lambda d: FileDiff(d, repo.head.commit.hexsha, git_dir=git_path), diffs))
+
+
 def get_changed_methods_from_file_diffs(file_diffs):
     methods = []
     for file_diff in file_diffs:
