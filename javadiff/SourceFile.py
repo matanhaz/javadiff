@@ -152,17 +152,18 @@ class SourceFile(object):
         directory_path = os.path.join(results_dir, name_project, "java")
         directory_path = os.path.abspath(os.path.join(directory_path, os.listdir(directory_path)[0], name_project))
 
-        STATIC = ['PDA', 'LOC', 'CLOC', 'PUA', 'McCC', 'LLOC', 'LDC', 'NOS', 'MISM', 'CCL', 'TNOS', 'TLLOC',
-                  'NLE', 'CI', 'HPL', 'MI', 'HPV', 'CD', 'NOI', 'NUMPAR', 'MISEI', 'CC', 'LLDC', 'NII', 'CCO',
+        STATIC = ['PDA', 'LOC', 'CLOC', 'PUA', 'McCC', 'LLOC', 'LDC', # File
+                  'NOS', 'CCL', 'TNOS', 'TLLOC',
+                  'NLE', 'CI', 'CD', 'NOI', 'NUMPAR',  'CC', 'LLDC', 'NII', 'CCO',
                   'CLC', 'TCD',
-                  'NL', 'TLOC', 'CLLC', 'TCLOC', 'MIMS', 'HDIF', 'DLOC', 'NLM', 'DIT', 'NPA', 'TNLPM',
+                  'NL', 'TLOC', 'CLLC', 'TCLOC',   'DLOC', 'NLM', 'DIT', 'NPA', 'TNLPM',
                   'TNLA', 'NLA', 'AD', 'TNLPA', 'NM', 'TNG', 'NLPM', 'TNM', 'NOC', 'NOD', 'NOP', 'NLS', 'NG',
                   'TNLG',
                   'CBOI',
                   'RFC', 'NLG', 'TNLS', 'TNA', 'NLPA', 'NOA', 'WMC', 'NPM', 'TNPM', 'TNS', 'NA', 'LCOM5', 'NS',
                   'CBO',
                   'TNLM',
-                  'TNPA']
+                  'TNPA'] # 'MI','HPL','HDIF','MIMS','HPV','MISEI','MISM',
         x = pd.read_csv(directory_path + "-Class.csv", low_memory=False)
         x_sum = x.agg({i: 'sum' for i in STATIC if i in list(x.columns)})
         y = pd.read_csv(directory_path + "-Method.csv", low_memory=False)
