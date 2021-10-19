@@ -155,7 +155,7 @@ class SourceFile(object):
         directory_path = os.path.abspath(os.path.join(directory_path, os.listdir(directory_path)[0], name_project))
 
         STATIC = ['PDA', 'LOC', 'CLOC', 'PUA', 'McCC', 'LLOC',  # File
-                  'TONS',  # Component
+                  # 'TONS',  # Component
                   'LDC', 'TLLOC', 'CCL',
                   'NOS',
                   'NLE', 'CI', 'CD', 'NOI', 'NUMPAR', 'CC', 'LLDC', 'NII', 'CCO',
