@@ -145,25 +145,28 @@ class SourceFile(object):
     def run_open_analyzer(self):
         results_dir = tempfile.mkdtemp(prefix='results_osa_')
         name_project = os.path.basename(self.path_to_dir_source)
-        run([os.path.abspath(os.path.join(os.path.dirname(__file__), r'..\externals\java\OpenStaticAnalyzerJava.exe')),
+        run([get_java_exe_by_version(8),
+             os.path.abspath(os.path.join(os.path.dirname(__file__), r'..\externals\java\OpenStaticAnalyzerJava.exe')),
              '-resultsDir=' + results_dir, '-projectName=' +
              name_project, '-projectBaseDir=' + self.path_to_dir_source, self.path_to_source])
 
         directory_path = os.path.join(results_dir, name_project, "java")
         directory_path = os.path.abspath(os.path.join(directory_path, os.listdir(directory_path)[0], name_project))
 
-        STATIC = ['PDA', 'LOC', 'CLOC', 'PUA', 'McCC', 'LLOC', 'LDC', # File
-                  'NOS', 'CCL', 'TNOS', 'TLLOC',
-                  'NLE', 'CI', 'CD', 'NOI', 'NUMPAR',  'CC', 'LLDC', 'NII', 'CCO',
+        STATIC = ['PDA', 'LOC', 'CLOC', 'PUA', 'McCC', 'LLOC',  # File
+                  'TONS',  # Component
+                  'LDC', 'TLLOC', 'CCL',
+                  'NOS',
+                  'NLE', 'CI', 'CD', 'NOI', 'NUMPAR', 'CC', 'LLDC', 'NII', 'CCO',
                   'CLC', 'TCD',
-                  'NL', 'TLOC', 'CLLC', 'TCLOC',   'DLOC', 'NLM', 'DIT', 'NPA', 'TNLPM',
+                  'NL', 'TLOC', 'CLLC', 'TCLOC', 'DLOC', 'NLM', 'DIT', 'NPA', 'TNLPM',
                   'TNLA', 'NLA', 'AD', 'TNLPA', 'NM', 'TNG', 'NLPM', 'TNM', 'NOC', 'NOD', 'NOP', 'NLS', 'NG',
                   'TNLG',
                   'CBOI',
                   'RFC', 'NLG', 'TNLS', 'TNA', 'NLPA', 'NOA', 'WMC', 'NPM', 'TNPM', 'TNS', 'NA', 'LCOM5', 'NS',
                   'CBO',
                   'TNLM',
-                  'TNPA'] # 'MI','HPL','HDIF','MIMS','HPV','MISEI','MISM',
+                  'TNPA']  # 'MI','HPL','HDIF','MIMS','HPV','MISEI','MISM',
         x = pd.read_csv(directory_path + "-Class.csv", low_memory=False)
         x_sum = x.agg({i: 'sum' for i in STATIC if i in list(x.columns)})
         y = pd.read_csv(directory_path + "-Method.csv", low_memory=False)
