@@ -30,7 +30,7 @@ class FileDiff(object):
 
     def __init__(self, diff, commit_sha, first_commit=None, second_commit=None, git_dir=None, analyze_source_lines=True,
                  analyze_diff=False):
-        self.file_name = diff.b_path
+        self.file_name = diff.a_path if diff.deleted_file else diff.b_path
         self.commit_sha = commit_sha
         self.is_ok = self.file_name.endswith(".java")
         if not self.is_ok:
