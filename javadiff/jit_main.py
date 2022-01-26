@@ -5,6 +5,7 @@ except:
 import sys
 import git
 import re
+import os
 import pandas as pd
 
 def fix_renamed_files(files):
@@ -79,4 +80,8 @@ if __name__ == '__main__':
         c = get_commit_diff(repo_path, commit, analyze_diff=True)
         if c:
             metrics.extend(c.get_metrics())
-    pd.DataFrame(metrics).to_csv(f'./results/{ind}.csv', index=False)
+    os.mkdir('./results')
+    df = pd.DataFrame(metrics)
+    print(df.head())
+    print(os.path.abspath(f'./results/{ind}.csv'))
+    df.to_csv(f'./results/{ind}.csv', index=False)
