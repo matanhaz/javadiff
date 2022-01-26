@@ -12,11 +12,13 @@ try:
     from .SourceFile import SourceFile
     from .methodData import SourceLine
     from .ast_diff_parser import AstDiff
+    from .refactoring_miner_parser import refactoring_miner_loader
     from .utils import get_java_exe_by_version
 except:
     from SourceFile import SourceFile
     from methodData import SourceLine
     from ast_diff_parser import AstDiff
+    from refactoring_miner_parser import refactoring_miner_loader
     from utils import get_java_exe_by_version
 
 
@@ -53,13 +55,18 @@ class FileDiff(object):
             for k in self.after_file.halstead:
                 self.halstead[k] = self.after_file.halstead[k] - self.before_file.halstead[k]
         if analyze_diff:
-            path_to_out_json = None
+            ast_diff_json, rf_json = None, None
             try:
-                f, path_to_out_json = tempfile.mkstemp()
+                f, ast_diff_json = tempfile.mkstemp()
                 os.close(f)
                 run([get_java_exe_by_version(11), '-cp', os.path.abspath(os.path.join(os.path.dirname(__file__), r'..\externals\gumtree-spoon-ast-diff-SNAPSHOT-jar-with-dependencies.jar')), 'gumtree.spoon.AstComparator', self.before_file.path_to_source,
-                self.after_file.path_to_source, path_to_out_json])
-                for k, v in AstDiff.load(path_to_out_json).items():
+                self.after_file.path_to_source, ast_diff_json])
+                f, rf_json = tempfile.mkstemp()
+                os.close(f)
+                run([get_java_exe_by_version(11), '-cp', os.path.abspath(os.path.join(os.path.dirname(__file__), r'..\externals\RefactoringMiner-2.2.0\RefactoringMiner-2.2.0\lib\*')), 'org.refactoringminer.RefactoringMiner', '-bd', self.before_file.path_to_dir_source,
+                self.after_file.path_to_dir_source, self.commit_sha, '-json', rf_json])
+                refactoring_miner_loader(rf_json)
+                for k, v in AstDiff.load(ast_diff_json).items():
                     if k != 'operations':
                         self.ast_metrics[k] = v
 
@@ -68,8 +75,10 @@ class FileDiff(object):
             except:
                 pass
             finally:
-                if path_to_out_json:
-                    os.remove(path_to_out_json)
+                if ast_diff_json:
+                    os.remove(ast_diff_json)
+                if rf_json:
+                    os.remove(rf_json)
                 self.before_file.remove_source()
                 self.after_file.remove_source()
 
