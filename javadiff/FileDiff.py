@@ -47,6 +47,7 @@ class FileDiff(object):
         self.modified_names = self.after_file.modified_names
         self.ast_metrics = {}
         self.halstead = {}
+        self.refactorings = {}
         self.osa_metrics = {}
         self.decls = SourceLine.get_decles_empty_dict()
         if analyze_source_lines:
@@ -63,15 +64,17 @@ class FileDiff(object):
                 self.after_file.path_to_source, ast_diff_json])
                 f, rf_json = tempfile.mkstemp()
                 os.close(f)
-                run([get_java_exe_by_version(11), '-cp', os.path.abspath(os.path.join(os.path.dirname(__file__), r'..\externals\RefactoringMiner-2.2.0\RefactoringMiner-2.2.0\lib\*')), 'org.refactoringminer.RefactoringMiner', '-bd', self.before_file.path_to_dir_source,
-                self.after_file.path_to_dir_source, self.commit_sha, '-json', rf_json])
-                refactoring_miner_loader(rf_json)
                 for k, v in AstDiff.load(ast_diff_json).items():
                     if k != 'operations':
                         self.ast_metrics[k] = v
 
                 for k in self.after_file.osa_metrics:
                     self.osa_metrics[k] = self.after_file.osa_metrics[k] - self.before_file.osa_metrics[k]
+                run([get_java_exe_by_version(11), '-cp', os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                                                      r'..\externals\RefactoringMiner-2.2.0\RefactoringMiner-2.2.0\lib\*')),
+                     'org.refactoringminer.RefactoringMiner', '-bd', self.before_file.path_to_dir_source,
+                     self.after_file.path_to_dir_source, self.commit_sha, '-json', rf_json])
+                self.refactorings = refactoring_miner_loader(rf_json)
             except:
                 pass
             finally:
@@ -210,6 +213,8 @@ class FileDiff(object):
             ans['ast_diff_' + k] = self.ast_metrics[k]
         for k in self.osa_metrics:
             ans['delta_' + k] = self.osa_metrics[k]
+        for k in self.refactorings:
+            ans['refactorings_' + k] = self.refactorings[k]
         # churn
         ans['added_lines+removed_lines'] = after['changed_lines'] + before['changed_lines']
         ans['added_lines-removed_lines'] = after['changed_lines'] - before['changed_lines']

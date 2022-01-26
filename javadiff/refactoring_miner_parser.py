@@ -1,7 +1,37 @@
+import os
 from dataclasses import dataclass, asdict
 from typing import List
+from collections import Counter
+
 import jsons
-import os
+
+# types from src/org/refactoringminer/api/RefactoringType.java
+REFACTORING_TYPES = {'Extract Method', 'Rename Class', 'Move Attribute', 'Move And Rename Attribute',
+                     'Replace Attribute', 'Rename Method', 'Inline Method', 'Move Method', 'Move And Rename Method',
+                     'Pull Up Method', 'Move Class', 'Move And Rename Class', 'Move Source Folder', 'Pull Up Attribute',
+                     'Push Down Attribute', 'Push Down Method', 'Extract Interface', 'Extract Superclass',
+                     'Extract Subclass', 'Extract Class', 'Merge Method', 'Extract And Move Method',
+                     'Move And Inline Method', 'Convert Anonymous Class to Type', 'Introduce Polymorphism',
+                     'Rename Package', 'Move Package', 'Extract Variable', 'Extract Attribute', 'Inline Variable',
+                     'Rename Variable', 'Rename Parameter', 'Rename Attribute', 'Merge Variable', 'Merge Parameter',
+                     'Merge Attribute', 'Split Variable', 'Split Parameter', 'Split Attribute',
+                     'Replace Variable With Attribute', 'Replace Attribute With Variable', 'Parameterize Variable',
+                     'Localize Parameter', 'Parameterize Attribute', 'Change Return Type', 'Change Variable Type',
+                     'Change Parameter Type', 'Change Attribute Type', 'Add Method Annotation',
+                     'Remove Method Annotation', 'Modify Method Annotation', 'Add Attribute Annotation',
+                     'Remove Attribute Annotation', 'Modify Attribute Annotation', 'Add Class Annotation',
+                     'Remove Class Annotation', 'Modify Class Annotation', 'Add Parameter Annotation',
+                     'Remove Parameter Annotation', 'Modify Parameter Annotation', 'Add Parameter', 'Remove Parameter',
+                     'Reorder Parameter', 'Add Variable Annotation', 'Remove Variable Annotation',
+                     'Modify Variable Annotation', 'Add Thrown Exception Type', 'Remove Thrown Exception Type',
+                     'Change Thrown Exception Type', 'Change Method Access Modifier',
+                     'Change Attribute Access Modifier', 'Encapsulate Attribute', 'Add Method Modifier',
+                     'Remove Method Modifier', 'Add Attribute Modifier', 'Remove Attribute Modifier',
+                     'Add Variable Modifier', 'Add Parameter Modifier', 'Remove Variable Modifier',
+                     'Remove Parameter Modifier', 'Change Class Access Modifier', 'Add Class Modifier',
+                     'Remove Class Modifier', 'Split Package', 'Merge Package', 'Change Type Declaration Kind',
+                     'Collapse Hierarchy', 'Replace Loop With Pipeline', 'Replace Anonymous With Lambda'}
+
 
 @dataclass
 class RefactoringMinerLocation:
@@ -87,12 +117,19 @@ class RefactoringMinerOutput:
         return ans
 
 
+def get_types_count(refactorings):
+    d = dict.fromkeys(REFACTORING_TYPES, 0)
+    d.update(Counter(list(map(lambda r: r.refactor_type, refactorings))))
+    return d
+
+
 def refactoring_miner_loader(file_path):
     with open(file_path) as f:
         ans = jsons.loads(f.read(), cls=RefactoringMinerOutput)
         ans.set()
-        return ans
+        return get_types_count(ans.commits[0].refactorings)
 
 
 if __name__ == "__main__":
-    data = refactoring_miner_loader(r"C:\Users\User\Downloads\11.json (1)\out.json")
+    refactorings = refactoring_miner_loader(r"C:\temp\rm_ca2.json")
+    pass
