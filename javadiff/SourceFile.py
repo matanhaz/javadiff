@@ -145,6 +145,8 @@ class SourceFile(object):
     def run_open_analyzer(self):
         results_dir = tempfile.mkdtemp(prefix='results_osa_')
         name_project = os.path.basename(self.path_to_dir_source)
+        print(os.getenv('JAVA_HOME'))
+        print(os.getenv('PATH'))
         run([os.path.abspath(os.path.join(os.path.dirname(__file__), r'..\externals\java\OpenStaticAnalyzerJava.exe')),
              '-resultsDir=' + results_dir, '-projectName=' +
              name_project, '-projectBaseDir=' + self.path_to_dir_source, self.path_to_source])
